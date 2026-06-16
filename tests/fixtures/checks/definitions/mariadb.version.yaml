@@ -1,0 +1,25 @@
+---
+id: mariadb.version
+title: MariaDB repository is pinned to at least the approved version
+description: >
+  The Galera database nodes must install MariaDB from the approved (or newer) series.
+  The series is read from the version embedded in the mariadb apt repository URL
+  (the catalog does not pin an exact package version via ensure).
+spec_section: "2.2.8"
+severity: error
+kind: declarative
+selector:
+  type: contains_class
+  class: nectar::profile::mariadb::cluster
+query:
+  type: resource_param
+  resource_type: Apt::Source
+  resource_title: mariadb
+  param: location
+  extract: 'regex:.*/repo/(?P<value>[0-9][0-9.]*)/'
+assertion:
+  op: semver_gte
+remediation:
+  guidance: Point the mariadb apt repository at the approved MariaDB version series.
+  hiera_key: mariadb::version
+  hint_file: data/nodegroups/<db-nodegroup>.yaml

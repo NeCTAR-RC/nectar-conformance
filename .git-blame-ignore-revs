@@ -1,0 +1,7 @@
+# Revisions to skip in `git blame` (bulk, mechanical reformatting only).
+# Enable locally with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# GitHub/GitLab pick this file up automatically.
+
+# style: introduce pre-commit (ruff, hacking) and reformat to comply
+f43e8f47423f17454cb725b62dca0f478311201e

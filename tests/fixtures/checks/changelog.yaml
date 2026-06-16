@@ -1,0 +1,68 @@
+---
+# Frozen conformance changelog used ONLY by the test suite.
+#
+# This is deliberately independent of the shipped changelog
+# (nectar_conformance/checks/changelog.yaml). Behavioural tests fold THIS file so that
+# appending a real dated rollout to the shipped changelog never forces a test update.
+# The values here are pinned to what the healthy `site_model` fixture (tests/conftest.py)
+# and the static catalog fixtures (tests/fixtures/catalogs) provide, so a complete site
+# is fully conformant and a drifted node fails.
+#
+# Keep this a pure baseline: every entry is effective from the spec's first day with no
+# `due` date, so the fold is date-insensitive (everything enforced, nothing pending) at
+# any evaluation instant. Staggered test/prod rollouts are exercised by the in-test
+# changelogs built in test_changelog.py and test_engine.py, not from here.
+#
+# Check definitions are still loaded from the package (the value-free logic contract);
+# only the bound values live in this fixture.
+
+tags:
+  # A pinned evaluation date, used by the tag-resolution and report tests.
+  "2026.1": "2026-03-01"
+
+entries:
+  # --- OpenStack service image tags ---
+  - {check_id: glance.api.image_tag, value: "30.1.0", effective: "2026-01-01"}
+  - {check_id: cinder.image_tag, value: "24.0.0", effective: "2026-01-01"}
+  - {check_id: nova.conductor.image_tag, value: "27.5.0", effective: "2026-01-01"}
+  - {check_id: nova.novnc.image_tag, value: "27.5.0", effective: "2026-01-01"}
+  - {check_id: nova.compute.image_tag, value: "27.5.1", effective: "2026-01-01"}
+  - {check_id: ceilometer.compute.image_tag, value: "20.0.0", effective: "2026-01-01"}
+  - {check_id: neutron.compute.image_tag, value: "22.2.1", effective: "2026-01-01"}
+  - {check_id: iscsid.image_tag, value: "2024.1-6", effective: "2026-01-01"}
+
+  # --- Operating system, per node type ---
+  - {check_id: os.controller.ubuntu, value: ["24.04", "22.04"], effective: "2026-01-01"}
+  - {check_id: os.compute.ubuntu, value: ["24.04", "22.04"], effective: "2026-01-01"}
+  - {check_id: os.database.ubuntu, value: ["24.04", "22.04"], effective: "2026-01-01"}
+  - {check_id: os.mq.ubuntu, value: ["24.04", "22.04"], effective: "2026-01-01"}
+  - {check_id: os.network.ubuntu, value: ["22.04"], effective: "2026-01-01"}
+  - {check_id: os.swift_storage.ubuntu, value: "24.04", effective: "2026-01-01"}
+  - {check_id: os.swift_proxy.ubuntu, value: "24.04", effective: "2026-01-01"}
+  - {check_id: os.proxy_admin.ubuntu, value: ["24.04", "22.04"], effective: "2026-01-01"}
+  - {check_id: os.proxy_user.ubuntu, value: ["24.04", "22.04"], effective: "2026-01-01"}
+  - {check_id: os.wagnet_router.ubuntu, value: ["24.04", "22.04"], effective: "2026-01-01"}
+
+  # --- Core service versions ---
+  - {check_id: ovn.version, value: "24.03", effective: "2026-01-01"}
+  - {check_id: rabbitmq.version, value: "3.13.7-1", effective: "2026-01-01"}
+  - {check_id: rabbitmq.erlang_version, value: "1:26.2.5.*", effective: "2026-01-01"}
+  - {check_id: mariadb.version, value: "10.11", effective: "2026-01-01"}
+
+  # --- Host counts / redundancy ---
+  - {check_id: glance.api.host_count, value: 2, effective: "2026-01-01"}
+  - {check_id: nova.conductor.host_count, value: 2, effective: "2026-01-01"}
+  - {check_id: nova.novnc.host_count, value: 2, effective: "2026-01-01"}
+  - {check_id: cinder.host_count, value: 1, effective: "2026-01-01"}
+  - {check_id: ceilometer.compute.host_count, value: 1, effective: "2026-01-01"}
+  - {check_id: neutron.compute.host_count, value: 1, effective: "2026-01-01"}
+  - {check_id: mariadb.cluster.host_count, value: 3, effective: "2026-01-01"}
+  - {check_id: rabbitmq.cluster.host_count, value: 3, effective: "2026-01-01"}
+  - {check_id: swift.storage.host_count, value: 3, effective: "2026-01-01"}
+  - {check_id: proxy.admin.host_count, value: 2, effective: "2026-01-01"}
+  - {check_id: proxy.user.host_count, value: 2, effective: "2026-01-01"}
+  - {check_id: wagnet.router.host_count, value: 2, effective: "2026-01-01"}
+
+  # --- Cross-cutting (presence/absence; no bound value) ---
+  - {check_id: networking.uses_networkd, effective: "2026-01-01"}
+  - {check_id: neutron.linuxbridge_absent, effective: "2026-01-01"}

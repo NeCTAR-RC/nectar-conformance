@@ -1,0 +1,11 @@
+{
+  "certname": "oc2.example.test",
+  "environment": "ardctest",
+  "resources": [
+    {"type": "Class", "title": "Nectar::Role::Openstack::Controller", "parameters": {}},
+    {"type": "Class", "title": "Nectar::Profile::Glance::Api", "parameters": {}},
+    {"type": "Class", "title": "Systemd::Networkd", "parameters": {}},
+    {"type": "Docker::Run", "title": "glance-api",
+     "parameters": {"image": "registry.rc.nectar.org.au/kolla/ubuntu-source-glance-api:29.4.0"}}
+  ]
+}

@@ -1,0 +1,24 @@
+---
+id: cinder.image_tag
+title: Cinder image tag is pinned to the approved release
+description: >
+  The cinder containers (cinder-volume, cinder-backup) on the controllers must run the
+  Core Services approved kolla image tag.
+spec_section: "2.2.3"
+severity: error
+kind: declarative
+selector:
+  type: contains_class
+  class: nectar::profile::cinder::volume
+query:
+  type: resource_param
+  resource_type: Docker::Run
+  resource_title: cinder-volume
+  param: image
+  extract: 'regex:.*:(?P<value>[^:]+)$'
+assertion:
+  op: equals
+remediation:
+  guidance: Pin the approved cinder image tag in the controller nodegroup hiera.
+  hiera_key: nectar::profile::cinder::common::image_tag
+  hint_file: data/nodegroups/<oc-nodegroup>.yaml

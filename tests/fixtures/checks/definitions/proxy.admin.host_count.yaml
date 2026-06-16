@@ -1,0 +1,17 @@
+---
+id: proxy.admin.host_count
+title: At least the required number of admin proxy hosts
+description: The site must run enough admin proxy hosts for redundancy.
+spec_section: "2.3"
+severity: error
+kind: declarative
+selector:
+  type: all
+query:
+  type: count
+  class: nectar::role::proxy::admin
+assertion:
+  op: count_gte
+remediation:
+  guidance: Add hosts with the admin proxy role so the site meets the required count.
+  hiera_key: nectar::role::proxy::admin

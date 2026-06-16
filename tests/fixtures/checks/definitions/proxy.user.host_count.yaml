@@ -1,0 +1,17 @@
+---
+id: proxy.user.host_count
+title: At least the required number of user proxy hosts
+description: The site must run enough user proxy hosts for redundancy.
+spec_section: "2.3"
+severity: error
+kind: declarative
+selector:
+  type: all
+query:
+  type: count
+  class: nectar::role::proxy::user
+assertion:
+  op: count_gte
+remediation:
+  guidance: Add hosts with the user proxy role so the site meets the required count.
+  hiera_key: nectar::role::proxy::user

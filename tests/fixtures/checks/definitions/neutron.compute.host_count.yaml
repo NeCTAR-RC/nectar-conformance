@@ -1,0 +1,19 @@
+---
+id: neutron.compute.host_count
+title: At least the required number of neutron OVN metadata agent hosts
+description: >
+  The neutron OVN metadata agent profile must run on at least the required number of
+  compute hosts.
+spec_section: "2.2.4"
+severity: error
+kind: declarative
+selector:
+  type: all
+query:
+  type: count
+  class: nectar::profile::neutron::neutron_ovn_metadata_container
+assertion:
+  op: count_gte
+remediation:
+  guidance: Apply the neutron OVN metadata agent profile to at least the required number of compute hosts.
+  hiera_key: nectar::profile::neutron::neutron_ovn_metadata_container

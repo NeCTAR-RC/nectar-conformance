@@ -1,0 +1,19 @@
+---
+id: os.controller.ubuntu
+title: Controllers run an approved Ubuntu release
+description: >
+  The OpenStack controller nodes must run one of the approved Ubuntu releases
+  (the changelog binds the accepted set).
+spec_section: "2.1"
+severity: error
+kind: declarative
+selector:
+  type: contains_class
+  class: nectar::role::openstack::controller
+query:
+  type: fact
+  path: os.release.full
+assertion:
+  op: in_set
+remediation:
+  guidance: Reinstall or upgrade the controller nodes onto an approved Ubuntu release.

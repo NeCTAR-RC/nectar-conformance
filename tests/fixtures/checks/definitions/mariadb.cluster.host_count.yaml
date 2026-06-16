@@ -1,0 +1,17 @@
+---
+id: mariadb.cluster.host_count
+title: At least the required number of database cluster hosts
+description: The Galera database cluster must run enough nodes to maintain quorum.
+spec_section: "2.2.8"
+severity: error
+kind: declarative
+selector:
+  type: all
+query:
+  type: count
+  class: nectar::profile::mariadb::cluster
+assertion:
+  op: count_gte
+remediation:
+  guidance: Add database nodes so the Galera cluster meets the required node count.
+  hiera_key: nectar::profile::mariadb::cluster

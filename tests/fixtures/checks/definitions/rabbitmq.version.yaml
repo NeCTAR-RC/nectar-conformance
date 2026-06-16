@@ -1,0 +1,24 @@
+---
+id: rabbitmq.version
+title: RabbitMQ is pinned to the approved version
+description: >
+  The message queue hosts must pin the rabbitmq-server package to the approved version
+  via apt (profile::core::rabbitmq::server_pin_version), so all hosts run the same
+  RabbitMQ build regardless of what the upstream repository currently offers.
+spec_section: "2.2.9"
+severity: error
+kind: declarative
+selector:
+  type: contains_class
+  class: nectar::profile::rabbitmq::cluster
+query:
+  type: resource_param
+  resource_type: Apt::Pin
+  resource_title: pin-rabbitmq-server
+  param: version
+assertion:
+  op: equals
+remediation:
+  guidance: Pin the approved rabbitmq-server version in the message queue nodegroup hiera.
+  hiera_key: profile::core::rabbitmq::server_pin_version
+  hint_file: data/nodegroups/<mq-nodegroup>.yaml

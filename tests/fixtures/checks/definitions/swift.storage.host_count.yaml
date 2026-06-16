@@ -1,0 +1,22 @@
+---
+id: swift.storage.host_count
+title: At least the required number of swift storage nodes
+description: >
+  The Swift object store must run enough storage nodes to satisfy the ring replica
+  count for durability.
+spec_section: "2.2.7"
+severity: error
+kind: declarative
+# Swift is optional: a site that does not run object storage skips this check rather
+# than failing it.
+optional: true
+selector:
+  type: all
+query:
+  type: count
+  class: nectar::profile::swift::storage
+assertion:
+  op: count_gte
+remediation:
+  guidance: Add swift storage nodes so the object store meets the required replica count.
+  hiera_key: nectar::profile::swift::storage

@@ -1,0 +1,17 @@
+---
+id: os.swift_proxy.ubuntu
+title: Swift proxy nodes run the approved Ubuntu release
+description: The Swift proxy nodes must run the approved Ubuntu release.
+spec_section: "2.1"
+severity: error
+kind: declarative
+selector:
+  type: contains_class
+  class: nectar::profile::swift::proxy
+query:
+  type: fact
+  path: os.release.full
+assertion:
+  op: equals
+remediation:
+  guidance: Reinstall or upgrade the swift proxy nodes onto the approved Ubuntu release.

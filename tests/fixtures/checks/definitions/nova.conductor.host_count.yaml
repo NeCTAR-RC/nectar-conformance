@@ -1,0 +1,17 @@
+---
+id: nova.conductor.host_count
+title: At least the required number of nova conductor hosts
+description: The nova conductor profile must run on at least the required number of controllers.
+spec_section: "2.2.1"
+severity: error
+kind: declarative
+selector:
+  type: all
+query:
+  type: count
+  class: nectar::profile::nova::conductor
+assertion:
+  op: count_gte
+remediation:
+  guidance: Apply the nova conductor profile to at least the required number of controllers.
+  hiera_key: nectar::profile::nova::conductor

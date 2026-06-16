@@ -1,0 +1,19 @@
+---
+id: os.proxy_user.ubuntu
+title: User proxy nodes run an approved Ubuntu release
+description: >
+  The user proxy nodes must run one of the approved Ubuntu releases (the version
+  manifest binds the accepted set).
+spec_section: "2.1"
+severity: error
+kind: declarative
+selector:
+  type: contains_class
+  class: nectar::role::proxy::user
+query:
+  type: fact
+  path: os.release.full
+assertion:
+  op: in_set
+remediation:
+  guidance: Reinstall or upgrade the user proxy nodes onto an approved Ubuntu release.

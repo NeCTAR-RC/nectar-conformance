@@ -1,0 +1,5 @@
+{
+  "mariadb": {"version": "10.11"},
+  "os": {"name": "Ubuntu", "release": {"full": "24.04", "major": "24.04"}},
+  "datacenter": "dc1"
+}

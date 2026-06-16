@@ -1,0 +1,22 @@
+---
+id: neutron.linuxbridge_absent
+title: No hosts run the legacy linuxbridge agent
+description: >
+  Networking must use OVN. No host may still run the legacy neutron linuxbridge agent;
+  any remaining linuxbridge host must be migrated to OVN. Detected by the presence of
+  the neutron-plugin-linuxbridge-agent package (the agent itself, not the kolla image
+  name, which can contain "linuxbridge" on OVN metadata agents).
+spec_section: "2.2.4"
+severity: error
+kind: declarative
+selector:
+  type: all
+query:
+  type: resource_param
+  resource_type: Package
+  resource_title: neutron-plugin-linuxbridge-agent
+  param: ensure
+assertion:
+  op: absent
+remediation:
+  guidance: Migrate this host to OVN and remove the neutron linuxbridge agent.

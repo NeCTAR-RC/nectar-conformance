@@ -1,0 +1,19 @@
+---
+id: os.proxy_admin.ubuntu
+title: Admin proxy nodes run an approved Ubuntu release
+description: >
+  The admin proxy nodes must run one of the approved Ubuntu releases (the version
+  manifest binds the accepted set).
+spec_section: "2.1"
+severity: error
+kind: declarative
+selector:
+  type: contains_class
+  class: nectar::role::proxy::admin
+query:
+  type: fact
+  path: os.release.full
+assertion:
+  op: in_set
+remediation:
+  guidance: Reinstall or upgrade the admin proxy nodes onto an approved Ubuntu release.

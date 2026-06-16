@@ -1,0 +1,6 @@
+{
+  "include": ["nectar_conformance", "tests"],
+  "extraPaths": ["."],
+  "pythonVersion": "3.10",
+  "reportMissingImports": "warning"
+}

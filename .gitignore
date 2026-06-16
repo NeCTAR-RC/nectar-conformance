@@ -1,0 +1,22 @@
+*.py[cod]
+__pycache__/
+*.egg-info/
+.eggs/
+build/
+dist/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+cover/
+.pytest_cache/
+.venv/
+venv/
+
+# Exported real-site data (default --out dirs of scripts/export-*.sh). Operational
+# data, not source. Root-anchored so tests/fixtures/{catalogs,facts} are unaffected.
+/catalogs/
+/facts/
+# Local reports dir produced by nectar-conformance-refresh during dev.
+/.dev/
+.ruby-version

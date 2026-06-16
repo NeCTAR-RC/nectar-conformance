@@ -1,0 +1,19 @@
+---
+id: networking.uses_networkd
+title: Networking is configured with systemd-networkd
+description: >
+  Hosts must use the systemd-networkd module for network configuration rather than
+  legacy networking tooling.
+spec_section: "2.4"
+severity: warning
+kind: declarative
+selector:
+  type: all
+query:
+  type: class_present
+  class: systemd::networkd
+assertion:
+  op: present
+remediation:
+  guidance: Enable the systemd-networkd profile for this site.
+  hiera_key: nectar::role::base::enable_networkd

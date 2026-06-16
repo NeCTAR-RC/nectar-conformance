@@ -1,0 +1,19 @@
+---
+id: os.wagnet_router.ubuntu
+title: Wagnet router nodes run an approved Ubuntu release
+description: >
+  The wagnet router nodes must run one of the approved Ubuntu releases (the version
+  manifest binds the accepted set).
+spec_section: "2.1"
+severity: error
+kind: declarative
+selector:
+  type: contains_class
+  class: nectar::role::wagnet::router
+query:
+  type: fact
+  path: os.release.full
+assertion:
+  op: in_set
+remediation:
+  guidance: Reinstall or upgrade the wagnet router nodes onto an approved Ubuntu release.

@@ -1,0 +1,19 @@
+---
+id: glance.api.host_count
+title: At least the required number of glance API hosts
+description: >
+  The site must run enough glance API hosts for redundancy (the spec requires at least
+  two API servers).
+spec_section: "2.2.2"
+severity: error
+kind: declarative
+selector:
+  type: all
+query:
+  type: count
+  class: nectar::profile::glance::api
+assertion:
+  op: count_gte
+remediation:
+  guidance: Configure additional controller hosts with the glance API profile.
+  hiera_key: nectar::profile::glance::api

@@ -1,0 +1,9 @@
+{
+  "certname": "mq1.example.test",
+  "environment": "ardctest",
+  "resources": [
+    {"type": "Class", "title": "Nectar::Profile::Rabbitmq::Cluster", "parameters": {}},
+    {"type": "Class", "title": "Systemd::Networkd", "parameters": {}},
+    {"type": "Package", "title": "rabbitmq-server", "parameters": {"ensure": "3.13.7-1"}}
+  ]
+}

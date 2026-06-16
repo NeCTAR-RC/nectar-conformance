@@ -1,0 +1,19 @@
+---
+id: os.network.ubuntu
+title: Network nodes run an approved Ubuntu release
+description: >
+  The neutron/OVN network nodes must run one of the approved Ubuntu releases
+  (the changelog binds the accepted set).
+spec_section: "2.1"
+severity: error
+kind: declarative
+selector:
+  type: contains_class
+  class: nectar::role::neutron::controller
+query:
+  type: fact
+  path: os.release.full
+assertion:
+  op: in_set
+remediation:
+  guidance: Reinstall or upgrade the network nodes onto an approved Ubuntu release.

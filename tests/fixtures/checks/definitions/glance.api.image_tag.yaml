@@ -1,0 +1,24 @@
+---
+id: glance.api.image_tag
+title: Glance API image tag is pinned to the approved release
+description: >
+  The glance-api container must run the Core Services approved kolla image tag so all
+  sites run the same Glance build.
+spec_section: "2.2.2"
+severity: error
+kind: declarative
+selector:
+  type: contains_class
+  class: nectar::profile::glance::api
+query:
+  type: resource_param
+  resource_type: Docker::Run
+  resource_title: glance-api
+  param: image
+  extract: 'regex:.*:(?P<value>[^:]+)$'
+assertion:
+  op: equals
+remediation:
+  guidance: Pin the approved glance image tag in the controller nodegroup hiera.
+  hiera_key: nectar::profile::glance::api::image_tag
+  hint_file: data/nodegroups/<glance-nodegroup>.yaml

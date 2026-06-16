@@ -1,0 +1,78 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nectar-conformance"
+version = "0.1.0"
+description = "Conformance checker for Nectar puppet-managed OpenStack cloud sites"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "ARDC Nectar Core Services" }]
+dependencies = [
+    "httpx>=0.24",
+    "PyYAML>=6",
+    "jsonschema>=4",
+    "packaging>=21",
+    "cliff>=4",
+    "rich>=13",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7", "pytest-cov>=4", "respx>=0.20", "fastapi>=0.110", "uvicorn>=0.27"]
+# Static-repo data source (Phase 1.5) shells out to a puppet toolchain; no extra
+# Python deps, but kept as an extra so the dependency intent is explicit.
+static = []
+# Web dashboard: the FastAPI backend (nectar-conformance-web) and the refresh command
+# (nectar-conformance-refresh). The built SPA bundle is added to the container image.
+web = ["fastapi>=0.110", "uvicorn[standard]>=0.27"]
+
+[project.scripts]
+nectar-conformance = "nectar_conformance.cli.main:main"
+nectar-conformance-web = "nectar_conformance.web.app:main"
+nectar-conformance-refresh = "nectar_conformance.web.refresh:main"
+
+# cliff discovers commands from this entry-point namespace. Underscores in the
+# entry-point name become spaces in the command (check_run -> "check run").
+[project.entry-points."nectar_conformance.cli"]
+check_run = "nectar_conformance.cli.commands.check_run:CheckRun"
+check_list = "nectar_conformance.cli.commands.check_meta:CheckList"
+check_show = "nectar_conformance.cli.commands.check_meta:CheckShow"
+version_list = "nectar_conformance.cli.commands.version_cmd:VersionList"
+version_squash = "nectar_conformance.cli.commands.version_cmd:VersionSquash"
+version_diff = "nectar_conformance.cli.commands.diff:DiffVersions"
+report_diff = "nectar_conformance.cli.commands.report_diff:ReportDiff"
+changelog_lint = "nectar_conformance.cli.commands.changelog_cmd:ChangelogLint"
+
+# Escape-hatch check plugins register here (kind: plugin in a check definition).
+[project.entry-points."nectar_conformance.checks"]
+# example_plugin = "some_package.module:SomeCheckPlugin"
+
+[tool.setuptools.packages.find]
+include = ["nectar_conformance*"]
+
+# The check definitions and changelog are NOT packaged here: they live in the
+# nectar-conformance-checks repo and are supplied at runtime via --checks-dir /
+# NECTAR_CONFORMANCE_CHECKS_DIR. Only the JSON schema (code, not data) ships.
+[tool.setuptools.package-data]
+nectar_conformance = ["rules/schema.json"]
+
+[tool.coverage.report]
+# Keep the default "# pragma: no cover" behaviour and also drop unreachable __main__ glue.
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+]
+
+[tool.ruff]
+line-length = 79
+# see https://github.com/astral-sh/ruff/issues/4560
+ignore = ["E712"]
+
+[tool.ruff.format]
+quote-style = "preserve"
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "U"]

@@ -1,0 +1,24 @@
+---
+id: nova.compute.image_tag
+title: Nova compute image tag is pinned to the approved release
+description: >
+  The nova-compute container on the hypervisors must run the Core Services approved
+  kolla image tag.
+spec_section: "2.2.1"
+severity: error
+kind: declarative
+selector:
+  type: contains_class
+  class: nectar::profile::nova::compute::container
+query:
+  type: resource_param
+  resource_type: Docker::Run
+  resource_title: nova-compute
+  param: image
+  extract: 'regex:.*:(?P<value>[^:]+)$'
+assertion:
+  op: equals
+remediation:
+  guidance: Pin the approved nova-compute image tag in the compute nodegroup hiera.
+  hiera_key: nectar::profile::nova::compute::container::image_tag
+  hint_file: data/nodegroups/<cn-nodegroup>.yaml

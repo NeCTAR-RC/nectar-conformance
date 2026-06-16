@@ -1,0 +1,37 @@
+# Local dev / demo: a web service and a refresh service sharing ./reports -- the
+# docker-compose analogue of the k8s web Deployment + refresh CronJob + shared PVC.
+#
+#   docker compose up --build
+#   open http://localhost:8080
+#
+# The refresh service runs offline against the bundled fixtures. For live data, drop the
+# --source/--site/--catalog-dir flags and set NECTAR_CONFORMANCE_PUPPETDB_URL so it
+# discovers and evaluates real sites over PuppetDB.
+services:
+  web:
+    build: .
+    command: ["nectar-conformance-web", "--host", "0.0.0.0", "--port", "8080"]
+    environment:
+      NECTAR_CONFORMANCE_TIER: "${TIER:-test}"
+      NECTAR_CONFORMANCE_REPORTS_DIR: /reports
+    volumes:
+      - ./reports:/reports:ro
+    ports:
+      - "8080:8080"
+    depends_on:
+      - refresh
+
+  refresh:
+    build: .
+    command:
+      - nectar-conformance-refresh
+      - --interval=300
+      - --reports-dir=/reports
+      - --source=static
+      - --site=ardctest
+      - --catalog-dir=/fixtures/catalogs
+    environment:
+      NECTAR_CONFORMANCE_TIER: "${TIER:-test}"
+    volumes:
+      - ./reports:/reports
+      - ./tests/fixtures:/fixtures:ro

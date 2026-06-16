@@ -1,0 +1,24 @@
+---
+id: ceilometer.compute.image_tag
+title: Ceilometer compute agent image tag is pinned to the approved release
+description: >
+  The ceilometer-compute container on the hypervisors must run the Core Services
+  approved kolla image tag.
+spec_section: "2.2.6"
+severity: error
+kind: declarative
+selector:
+  type: contains_class
+  class: nectar::profile::ceilometer::agent_compute
+query:
+  type: resource_param
+  resource_type: Docker::Run
+  resource_title: ceilometer-compute
+  param: image
+  extract: 'regex:.*:(?P<value>[^:]+)$'
+assertion:
+  op: equals
+remediation:
+  guidance: Pin the approved ceilometer-compute image tag in the compute nodegroup hiera.
+  hiera_key: nectar::profile::ceilometer::agent_compute::image_tag
+  hint_file: data/nodegroups/<cn-nodegroup>.yaml

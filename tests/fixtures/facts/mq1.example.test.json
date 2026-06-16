@@ -1,0 +1,4 @@
+{
+  "os": {"name": "Ubuntu", "release": {"full": "24.04", "major": "24.04"}},
+  "datacenter": "dc1"
+}

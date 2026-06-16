@@ -1,0 +1,17 @@
+---
+id: os.swift_storage.ubuntu
+title: Swift storage nodes run the approved Ubuntu release
+description: The Swift object storage nodes must run the approved Ubuntu release.
+spec_section: "2.1"
+severity: error
+kind: declarative
+selector:
+  type: contains_class
+  class: nectar::profile::swift::storage
+query:
+  type: fact
+  path: os.release.full
+assertion:
+  op: equals
+remediation:
+  guidance: Reinstall or upgrade the swift storage nodes onto the approved Ubuntu release.

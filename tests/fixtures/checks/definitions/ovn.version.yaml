@@ -1,0 +1,22 @@
+---
+id: ovn.version
+title: OVN repository is pinned to the approved version
+description: >
+  Hosts running the OVN controller (compute and network nodes) must use the approved
+  OVN package repository version, set via profile::core::ovn_repo.
+spec_section: "2.2.4"
+severity: error
+kind: declarative
+selector:
+  type: contains_class
+  class: profile::core::ovn_repo
+query:
+  type: resource_param
+  resource_type: Class
+  resource_title: profile::core::ovn_repo
+  param: version
+assertion:
+  op: equals
+remediation:
+  guidance: Set the approved OVN repository version for this site.
+  hiera_key: profile::core::ovn_repo::version

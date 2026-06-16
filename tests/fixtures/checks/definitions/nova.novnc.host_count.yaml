@@ -1,0 +1,17 @@
+---
+id: nova.novnc.host_count
+title: At least the required number of nova novnc proxy hosts
+description: The nova novnc proxy profile must run on at least the required number of controllers.
+spec_section: "2.2.1"
+severity: error
+kind: declarative
+selector:
+  type: all
+query:
+  type: count
+  class: nectar::profile::nova::novnc
+assertion:
+  op: count_gte
+remediation:
+  guidance: Apply the nova novnc proxy profile to at least the required number of controllers.
+  hiera_key: nectar::profile::nova::novnc

@@ -1,0 +1,35 @@
+Goal:
+Want to create a conformance tool for nectar puppet site environments.
+
+Situation:
+Nectar runs a large openstack based cloud and uses puppet to manage each site.
+A site is a part of the single openstack based cloud and hosts some components. It has at least one nova cell, glance-api, cinder etc.
+See nectar-specifications-doc.md for more information.
+
+Problems:
+We get a lot of drift and it is hard to keep track of all the sites to ensure they are conforming. We also want to reduce duplication and ensure sites
+are re inventing the wheel.
+
+Some thoughts:
+An operator at a site should be able to run this tool and it would tell them how they conform, what is missing/wrong and how to fix it.
+
+There would also be a website operators can go to to check their conformance.
+Nectar core services would add new checks when the epcification changes.
+
+Maybe conformance is versioned?
+
+Some example checks would be:
+The docker image tag for glance is X
+There is 2 hosts configured to run role X
+Roles are defined in puppet-nectar puppet module. /home/sam/projects/puppet/puppet-nectar
+The systemd module should be used for configuring networking.
+The mariadb version should be 10.4
+The operating system for rabbitmq servers should be ubuntu 24.04
+
+Can take a look at the test sites that are located at /home/sam/projects/puppet/sites/test/
+the ardctest site should be used the the gold standard, it is the site nectar core services run (it could also have issues)
+
+Some usual things we do:
+Deprecate somethings which requires manifest or hiera changes.
+Add new things which requires new profiles or hiera added.
+

@@ -1,0 +1,17 @@
+---
+id: wagnet.router.host_count
+title: At least the required number of wagnet router hosts
+description: The site must run enough wagnet router hosts for redundancy.
+spec_section: "2.3"
+severity: error
+kind: declarative
+selector:
+  type: all
+query:
+  type: count
+  class: nectar::role::wagnet::router
+assertion:
+  op: count_gte
+remediation:
+  guidance: Add hosts with the wagnet router role so the site meets the required count.
+  hiera_key: nectar::role::wagnet::router

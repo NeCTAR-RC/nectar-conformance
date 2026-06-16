@@ -1,0 +1,17 @@
+---
+id: rabbitmq.cluster.host_count
+title: At least the required number of message queue cluster hosts
+description: The RabbitMQ cluster must run enough nodes to maintain quorum.
+spec_section: "2.2.9"
+severity: error
+kind: declarative
+selector:
+  type: all
+query:
+  type: count
+  class: nectar::profile::rabbitmq::cluster
+assertion:
+  op: count_gte
+remediation:
+  guidance: Add message queue nodes so the RabbitMQ cluster meets the required node count.
+  hiera_key: nectar::profile::rabbitmq::cluster

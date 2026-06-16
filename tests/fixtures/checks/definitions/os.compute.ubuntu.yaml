@@ -1,0 +1,21 @@
+---
+id: os.compute.ubuntu
+title: Compute nodes run an approved Ubuntu release
+description: >
+  The compute (hypervisor) nodes must run one of the approved Ubuntu releases (the
+  changelog binds the accepted set). Selected by the nova compute profile rather
+  than the compute role, because older package-based compute nodes carry the profile
+  but not the role class.
+spec_section: "2.1"
+severity: error
+kind: declarative
+selector:
+  type: contains_class
+  class: nectar::profile::nova::compute
+query:
+  type: fact
+  path: os.release.full
+assertion:
+  op: in_set
+remediation:
+  guidance: Reinstall or upgrade the compute nodes onto an approved Ubuntu release.
