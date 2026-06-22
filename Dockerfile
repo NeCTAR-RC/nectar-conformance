@@ -19,9 +19,13 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 # Install the package with the web extra. Only the bits pip needs are copied.
+# setuptools-scm derives the version from git, but .git is not in the build
+# context, so the Makefile passes the git-derived version in and we hand it to
+# setuptools-scm. ARG (not ENV) keeps it out of the final image's environment.
+ARG VERSION
 COPY pyproject.toml README.md ./
 COPY nectar_conformance/ ./nectar_conformance/
-RUN pip install '.[web]'
+RUN SETUPTOOLS_SCM_PRETEND_VERSION_FOR_NECTAR_CONFORMANCE="$VERSION" pip install '.[web]'
 
 # Drop in the built SPA; load_settings() picks it up via NECTAR_CONFORMANCE_WEB_STATIC.
 COPY --from=frontend /build/dist/ /app/web-static/

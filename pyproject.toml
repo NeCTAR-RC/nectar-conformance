@@ -1,10 +1,12 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "nectar-conformance"
-version = "0.1.0"
+# Version is derived from the git tag at build time by setuptools-scm; see
+# [tool.setuptools_scm] below. Listed in `dynamic` so it is not set statically.
+dynamic = ["version"]
 description = "Conformance checker for Nectar puppet-managed OpenStack cloud sites"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -48,6 +50,10 @@ changelog_lint = "nectar_conformance.cli.commands.changelog_cmd:ChangelogLint"
 # Escape-hatch check plugins register here (kind: plugin in a check definition).
 [project.entry-points."nectar_conformance.checks"]
 # example_plugin = "some_package.module:SomeCheckPlugin"
+
+[tool.setuptools_scm]
+# No options needed: derive the version from the git tag (e.g. 0.3.0) of the
+# checked-out commit. Untagged builds get a dev version like 0.3.1.devN+g<sha>.
 
 [tool.setuptools.packages.find]
 include = ["nectar_conformance*"]
