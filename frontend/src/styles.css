@@ -5,12 +5,47 @@
   --muted: #6b7686;
   --line: #e3e7ee;
   --accent: #1f6feb;
+  --on-accent: #ffffff;
   --good: #1a7f37;
   --warn: #9a6700;
   --bad: #b42318;
   --good-bg: #e7f4ea;
   --warn-bg: #fdf3d8;
   --bad-bg: #fbe9e7;
+  --th-bg: #fafbfc;
+  --skip-bg: #eef1f5;
+  --info-bg: #eaf2ff;
+  --fail-row-bg: #fffafa;
+  --muted-bucket-bg: #f4f6f8;
+  --overdue-border: #f1b0a8;
+  --tier-prod: #6e40c9;
+  --tier-test: #1f6feb;
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --bg: #000000;
+  --panel: #121212;
+  --ink: #e8e8e8;
+  --muted: #888888;
+  --line: #2a2a2a;
+  --accent: #ffffff;
+  --on-accent: #000000;
+  --good: #3fb950;
+  --warn: #d29922;
+  --bad: #f85149;
+  --good-bg: #0d2818;
+  --warn-bg: #3a2a00;
+  --bad-bg: #3d1014;
+  --th-bg: #121212;
+  --skip-bg: #1f1f1f;
+  --info-bg: #2a2a2a;
+  --fail-row-bg: #2a1416;
+  --muted-bucket-bg: #121212;
+  --overdue-border: #6e2b23;
+  --tier-prod: #6e40c9;
+  --tier-test: #1f6feb;
+  color-scheme: dark;
 }
 
 * {
@@ -68,13 +103,32 @@ body {
 
 .topbar nav a.active {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .freshness {
   margin-left: auto;
   color: var(--muted);
   font-size: 12px;
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .tier {
@@ -84,15 +138,15 @@ body {
   padding: 2px 8px;
   border-radius: 999px;
   font-weight: 700;
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .tier-prod {
-  background: #6e40c9;
+  background: var(--tier-prod);
 }
 
 .tier-test {
-  background: #1f6feb;
+  background: var(--tier-test);
 }
 
 h2 {
@@ -138,7 +192,7 @@ table.grid {
 }
 
 .grid th {
-  background: #fafbfc;
+  background: var(--th-bg);
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -172,7 +226,7 @@ a {
 }
 
 .status-skip {
-  background: #eef1f5;
+  background: var(--skip-bg);
   color: var(--muted);
 }
 
@@ -192,7 +246,7 @@ a {
 }
 
 .sev-info {
-  background: #eaf2ff;
+  background: var(--info-bg);
   color: var(--accent);
 }
 
@@ -221,7 +275,7 @@ a {
 }
 
 .rule-fail td {
-  background: #fffafa;
+  background: var(--fail-row-bg);
 }
 
 .node {
@@ -287,7 +341,7 @@ a {
 }
 
 .card-overdue {
-  border-color: #f1b0a8;
+  border-color: var(--overdue-border);
 }
 
 .card-head {
@@ -343,5 +397,5 @@ a {
 }
 
 .bucket-muted-bucket {
-  background: #f4f6f8;
+  background: var(--muted-bucket-bg);
 }
