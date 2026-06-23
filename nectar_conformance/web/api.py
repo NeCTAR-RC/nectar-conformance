@@ -10,6 +10,7 @@ from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Query
 
+from nectar_conformance import __version__
 from nectar_conformance.errors import VersionError
 from nectar_conformance.rollout import rollout_status
 from nectar_conformance.rules.loader import load_changelog
@@ -47,6 +48,7 @@ def build_router(settings: WebSettings, store: ReportStore) -> APIRouter:
         status = store.status()
         return {
             "status": "ok",
+            "version": __version__,
             "tier": tier,
             "reports_generated_at": status.get("generated_at"),
             "age_seconds": _age_seconds(status.get("generated_at")),
