@@ -13,6 +13,7 @@ export default function App() {
   const health = useApi('/health')
   const tier = health.data?.tier
   const age = health.data?.age_seconds
+  const version = health.data?.version
   const { theme, toggleTheme } = useTheme()
 
   return (
@@ -33,6 +34,11 @@ export default function App() {
         <span className="freshness" title="When the refresh job last evaluated sites">
           reports {fmtAge(age)}
         </span>
+        {version && (
+          <span className="version" title="nectar-conformance version">
+            v{version}
+          </span>
+        )}
         <button
           type="button"
           className="theme-toggle"

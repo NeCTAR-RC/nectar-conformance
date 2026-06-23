@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 from starlette.testclient import TestClient
 
+from nectar_conformance import __version__
 from nectar_conformance.config import Config
 from nectar_conformance.web.app import create_app
 from nectar_conformance.web.refresh import refresh_once
@@ -49,6 +50,8 @@ def test_health(client):
     assert body["status"] == "ok"
     assert body["tier"] == "prod"
     assert body["sites"] >= 1
+    # The dashboard reads its own version off /health (see frontend App.jsx).
+    assert body["version"] == __version__
 
 
 def test_sites_lists_each_site_with_summary(client):

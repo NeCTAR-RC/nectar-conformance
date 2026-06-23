@@ -112,6 +112,12 @@ body {
   font-size: 12px;
 }
 
+.version {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
 .theme-toggle {
   display: inline-flex;
   align-items: center;
