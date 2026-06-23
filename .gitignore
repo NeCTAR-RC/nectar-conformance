@@ -20,3 +20,4 @@ venv/
 # Local reports dir produced by nectar-conformance-refresh during dev.
 /.dev/
 .ruby-version
+reports/
