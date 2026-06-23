@@ -17,8 +17,10 @@ services:
     environment:
       NECTAR_CONFORMANCE_TIER: "${TIER:-test}"
       NECTAR_CONFORMANCE_REPORTS_DIR: /reports
+      NECTAR_CONFORMANCE_CHECKS_DIR: /fixtures/checks
     volumes:
       - ./reports:/reports:ro
+      - ./tests/fixtures:/fixtures:ro
     ports:
       - "8080:8080"
     depends_on:
@@ -36,6 +38,8 @@ services:
       - --source=static
       - --site=ardctest
       - --catalog-dir=/fixtures/catalogs
+      - --facts-dir=/fixtures/facts
+      - --checks-dir=/fixtures/checks
     environment:
       NECTAR_CONFORMANCE_TIER: "${TIER:-test}"
     volumes:
