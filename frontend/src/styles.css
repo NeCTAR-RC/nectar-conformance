@@ -303,6 +303,12 @@ a {
   color: var(--warn);
 }
 
+/* A passing check whose pending change falls due within the urgency window. */
+.advisory-urgent {
+  color: var(--bad);
+  font-weight: 600;
+}
+
 .cols {
   display: flex;
   gap: 20px;

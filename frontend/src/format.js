@@ -17,3 +17,29 @@ export function fmtAge(seconds) {
   if (hours < 48) return `${hours} h ago`
   return `${Math.round(hours / 24)} d ago`
 }
+
+// A pending change due within this many days is "due soon" (mirrors the API default).
+export const DUE_SOON_DAYS = 30
+
+// Whole days from now until an ISO date (UTC midnights), or null when unparsable.
+// Countdowns baked into stored reports go stale between refreshes, so urgency is
+// always recomputed from the absolute due date.
+export function daysUntil(iso, now = new Date()) {
+  if (!iso) return null
+  const due = Date.parse(`${iso}T00:00:00Z`)
+  if (Number.isNaN(due)) return null
+  const today = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+  )
+  return Math.round((due - today) / 86400000)
+}
+
+// A human phrase for a day countdown (negative = past due, null = date unknown).
+export function fmtDueIn(days) {
+  if (days == null) return 'soon'
+  if (days === 0) return 'today'
+  if (days < 0) return `${-days} day${days === -1 ? '' : 's'} overdue`
+  return `in ${days} day${days === 1 ? '' : 's'}`
+}

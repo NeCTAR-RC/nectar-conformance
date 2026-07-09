@@ -3,9 +3,12 @@ import { useApi } from '../useApi.js'
 import {
   Async,
   CheckLink,
+  DUE_SOON_DAYS,
   Score,
   SeverityBadge,
   StatusBadge,
+  daysUntil,
+  fmtDueIn,
   fmtValue,
 } from '../ui.jsx'
 
@@ -60,6 +63,10 @@ export default function SiteDetail() {
 function RuleRow({ rule }) {
   const failing = rule.checks.filter((c) => c.status === 'fail')
   const advisory = rule.checks.find((c) => c.advisory)?.advisory
+  // Recompute the countdown from the absolute due date: the days baked into a stored
+  // report go stale between refreshes. A passing rule due soon will fail — flag it.
+  const days = advisory ? (daysUntil(advisory.due) ?? advisory.days) : null
+  const urgent = rule.status === 'pass' && days != null && days <= DUE_SOON_DAYS
   return (
     <tr className={`rule-${rule.status}`}>
       <td>
@@ -85,9 +92,9 @@ function RuleRow({ rule }) {
           <div className="muted small">+{failing.length - 6} more</div>
         )}
         {advisory && (
-          <div className="advisory small">
-            upcoming: {fmtValue(advisory.upcoming_value)} (due {advisory.due}
-            {advisory.days != null ? `, ${advisory.days} days` : ''})
+          <div className={`advisory small${urgent ? ' advisory-urgent' : ''}`}>
+            upcoming: {fmtValue(advisory.upcoming_value)} (due {advisory.due},{' '}
+            {fmtDueIn(days)}){urgent && ' · will fail'}
           </div>
         )}
       </td>

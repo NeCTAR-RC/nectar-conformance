@@ -1,7 +1,13 @@
 // Small shared presentational helpers used across views.
 import { Link } from 'react-router-dom'
 // Re-export the pure formatters so views can keep importing them from here.
-export { fmtAge, fmtValue } from './format.js'
+export {
+  DUE_SOON_DAYS,
+  daysUntil,
+  fmtAge,
+  fmtDueIn,
+  fmtValue,
+} from './format.js'
 
 // A link to the per-check detail page (status of this check at every site).
 export function CheckLink({ id, children }) {
