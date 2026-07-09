@@ -13,9 +13,11 @@ from fastapi import APIRouter, HTTPException, Query
 from nectar_conformance import __version__
 from nectar_conformance.errors import VersionError
 from nectar_conformance.rollout import (
+    ADOPTED,
     DUE_SOON,
     OVERDUE,
     PENDING,
+    actionable,
     rollout_status,
     site_rollout,
 )
@@ -40,7 +42,8 @@ def _zero_site_rollout() -> dict:
     return {
         OVERDUE: [],
         PENDING: [],
-        "counts": {OVERDUE: 0, PENDING: 0, DUE_SOON: 0},
+        ADOPTED: [],
+        "counts": {OVERDUE: 0, PENDING: 0, DUE_SOON: 0, ADOPTED: 0},
         "next_due": None,
     }
 
@@ -85,10 +88,16 @@ def build_router(settings: WebSettings, store: ReportStore) -> APIRouter:
         errors = status.get("errors") or {}
         # Per-site rollout exposure, recomputed from the changelog's absolute due
         # dates at request time (countdowns baked into stored reports go stale).
+        # Only rollouts still in flight: a done change would sit in every site's
+        # adopted list forever (until squashed away) without saying anything.
         today = date.today()
         pivot = site_rollout(
-            rollout_status(
-                list_changes(config, tier=tier, as_of=today), reports, today
+            actionable(
+                rollout_status(
+                    list_changes(config, tier=tier, as_of=today),
+                    reports,
+                    today,
+                )
             ),
             today,
             due_soon_days=within,
@@ -242,18 +251,11 @@ def build_router(settings: WebSettings, store: ReportStore) -> APIRouter:
         today = date.today()
         changes_list = list_changes(config, tier=tier, as_of=today)
         rollout = rollout_status(changes_list, store.all_reports(), today)
-        # Only surface changes that still need action: not yet due, or someone is behind.
-        actionable = [
-            c
-            for c in rollout
-            if not c["due_passed"]
-            or c["counts"]["overdue"]
-            or c["counts"]["pending"]
-        ]
         return {
             "tier": tier,
             "as_of": today.isoformat(),
-            "rollout": actionable,
+            # Only changes that still need action: not yet due, or someone is behind.
+            "rollout": actionable(rollout),
         }
 
     return router

@@ -110,17 +110,28 @@ def rollout_status(
     return out
 
 
+def actionable(rollout: list[dict]) -> list[dict]:
+    """Changes still needing action: not yet due, or some site is behind."""
+    return [
+        c
+        for c in rollout
+        if not c["due_passed"] or c["counts"][OVERDUE] or c["counts"][PENDING]
+    ]
+
+
 def site_rollout(
     rollout: list[dict], as_of: date, *, due_soon_days: int = 30
 ) -> dict[str, dict]:
     """Pivot :func:`rollout_status` output into a per-site view (pure, no I/O).
 
-    Pass the unfiltered rollout: which changes are worth showing is the caller's call,
-    not baked in here. ``days`` is recomputed from each change's absolute due date
-    against ``as_of`` — countdowns baked into stored reports go stale between refreshes.
-    Sites that are only ever adopted / not applicable still get an entry (zero counts),
-    so a consumer can tell "up to date" from "no data". ``due_soon`` counts pending
-    changes due within ``due_soon_days``.
+    Which changes are worth showing is the caller's call, not baked in here (pass
+    through :func:`actionable` first to drop finished rollouts). ``days`` is recomputed
+    from each change's absolute due date against ``as_of`` — countdowns baked into
+    stored reports go stale between refreshes. Adopted changes are carried per site so
+    a consumer can show every in-flight rollout's status, and sites where a change is
+    only ever not applicable still get an entry (zero counts), so "no rollouts apply"
+    is distinct from "no data". ``due_soon`` counts pending changes due within
+    ``due_soon_days``.
     """
     sites: dict[str, dict] = {}
 
@@ -130,7 +141,8 @@ def site_rollout(
             {
                 OVERDUE: [],
                 PENDING: [],
-                "counts": {OVERDUE: 0, PENDING: 0, DUE_SOON: 0},
+                ADOPTED: [],
+                "counts": {OVERDUE: 0, PENDING: 0, DUE_SOON: 0, ADOPTED: 0},
                 "next_due": None,
             },
         )
@@ -153,11 +165,13 @@ def site_rollout(
             entry(site)[OVERDUE].append(ref)
         for site in buckets[PENDING]:
             entry(site)[PENDING].append(ref)
-        for site in buckets[ADOPTED] + buckets[NOT_APPLICABLE]:
+        for site in buckets[ADOPTED]:
+            entry(site)[ADOPTED].append(ref)
+        for site in buckets[NOT_APPLICABLE]:
             entry(site)
 
     for view in sites.values():
-        for bucket in (OVERDUE, PENDING):
+        for bucket in (OVERDUE, PENDING, ADOPTED):
             view[bucket].sort(key=lambda r: (r["due"] or "", r["check_id"]))
         pending = view[PENDING]
         view["counts"] = {
@@ -168,6 +182,7 @@ def site_rollout(
                 for r in pending
                 if r["days"] is not None and r["days"] <= due_soon_days
             ),
+            ADOPTED: len(view[ADOPTED]),
         }
         dues = [r["due"] for r in pending if r["due"]]
         view["next_due"] = min(dues) if dues else None

@@ -309,6 +309,40 @@ a {
   font-weight: 600;
 }
 
+/* Per-rollout status lines on the sites list. */
+.roll-line {
+  white-space: nowrap;
+}
+
+.roll-overdue {
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.dot-overdue {
+  background: var(--bad);
+}
+
+.dot-due-soon {
+  background: var(--warn);
+}
+
+.dot-pending {
+  background: var(--muted);
+}
+
+.dot-adopted {
+  background: var(--good);
+}
+
 .cols {
   display: flex;
   gap: 20px;

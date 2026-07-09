@@ -1,39 +1,60 @@
 import { Link } from 'react-router-dom'
 import { useApi } from '../useApi.js'
-import { Async, Score, SeverityBadge } from '../ui.jsx'
+import {
+  Async,
+  CheckLink,
+  DUE_SOON_DAYS,
+  Score,
+  SeverityBadge,
+  fmtDueIn,
+  fmtValue,
+} from '../ui.jsx'
 
-// The check_ids behind a rollout count, as a plain-text tooltip.
-function refsTitle(refs) {
-  return refs.map((r) => `${r.check_id} (due ${r.due})`).join('\n')
+// One in-flight rollout's status for this site: a colored dot, the check, and how
+// urgent it is. `days` comes from the API, computed at request time, so it is fresh.
+function RolloutLine({ change, kind }) {
+  const status =
+    kind === 'overdue'
+      ? { cls: 'overdue', text: fmtDueIn(change.days) }
+      : kind === 'adopted'
+        ? { cls: 'adopted', text: 'adopted' }
+        : change.days != null && change.days <= DUE_SOON_DAYS
+          ? { cls: 'due-soon', text: `due ${fmtDueIn(change.days)}` }
+          : { cls: 'pending', text: `due ${fmtDueIn(change.days)}` }
+  return (
+    <div
+      className="small roll-line"
+      title={`${change.check_id} → ${fmtValue(change.target)} (due ${change.due})`}
+    >
+      <span className={`dot dot-${status.cls}`} />
+      <CheckLink id={change.check_id} />{' '}
+      <span className={kind === 'overdue' ? 'roll-overdue' : 'muted'}>
+        {status.text}
+      </span>
+    </div>
+  )
 }
 
-// Requirement: surface each site's rollout exposure at a glance — overdue screams,
-// due-soon warns, quiet pending stays muted. Links go to the Rollout page for detail.
+// Requirement: the status of every in-flight rollout, per site — overdue screams,
+// due-soon warns, adopted reassures. Finished rollouts are already filtered out
+// server-side, so this list stays short.
 function RolloutCell({ rollout }) {
   if (!rollout) return <span className="muted">—</span>
-  const { counts, next_due: nextDue } = rollout
-  if (counts.overdue > 0) {
-    return (
-      <Link to="/rollout" title={refsTitle(rollout.overdue)}>
-        <span className="badge sev-error">{counts.overdue} overdue</span>
-      </Link>
-    )
+  const lines = [
+    ...rollout.overdue.map((c) => [c, 'overdue']),
+    ...rollout.pending.map((c) => [c, 'pending']),
+    ...rollout.adopted.map((c) => [c, 'adopted']),
+  ]
+  if (lines.length === 0) {
+    return <span className="muted small">no rollouts</span>
   }
-  if (counts.due_soon > 0) {
-    return (
-      <Link to="/rollout" title={refsTitle(rollout.pending)}>
-        <span className="badge sev-warning">{counts.due_soon} due soon</span>
-      </Link>
-    )
-  }
-  if (counts.pending > 0) {
-    return (
-      <span className="muted small" title={refsTitle(rollout.pending)}>
-        {counts.pending} pending · next {nextDue}
-      </span>
-    )
-  }
-  return <span className="muted small">up to date</span>
+  return lines.map(([change, kind]) => (
+    <RolloutLine
+      key={`${change.check_id}:${change.due}`}
+      change={change}
+      kind={kind}
+    />
+  ))
 }
 
 // Requirement 1: list each site (for this instance's tier) with its conformance result.
@@ -52,7 +73,7 @@ export default function Sites() {
                 <th>Score</th>
                 <th>Pass / Fail / Skip</th>
                 <th>Worst</th>
-                <th>Rollout</th>
+                <th>Rollouts</th>
                 <th>Version</th>
               </tr>
             </thead>

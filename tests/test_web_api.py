@@ -158,20 +158,23 @@ def test_versions_diff_identity(client):
 _ZERO_ROLLOUT = {
     "overdue": [],
     "pending": [],
-    "counts": {"overdue": 0, "pending": 0, "due_soon": 0},
+    "adopted": [],
+    "counts": {"overdue": 0, "pending": 0, "due_soon": 0, "adopted": 0},
     "next_due": None,
 }
 
 
 def _checks_with_dated_change(dest: Path) -> str:
     # A purpose-built checks dir: the mirrored definitions plus a changelog whose dated
-    # entry straddles the real wall clock (the /sites endpoint judges at date.today()).
-    # The fixture site observes ubuntu 24.04 on its database node, so it has not
-    # adopted the upcoming ["26.04"] value: pending, due in 10 days.
+    # entries straddle the real wall clock (the /sites endpoint judges at date.today()).
+    # The fixture site observes ubuntu 24.04 on its database and mq nodes, so the
+    # upcoming ["26.04"] database value is pending (due in 10 days) while the narrowed
+    # ["24.04"] mq value is already adopted (due in 20 days, still in flight).
     today = date.today()
     baseline_effective = (today - timedelta(days=100)).isoformat()
     effective = (today - timedelta(days=10)).isoformat()
     due = (today + timedelta(days=10)).isoformat()
+    mq_due = (today + timedelta(days=20)).isoformat()
     shutil.copytree(Path(CHECKS_DIR) / "definitions", dest / "definitions")
     (dest / "changelog.yaml").write_text(
         "entries:\n"
@@ -179,6 +182,10 @@ def _checks_with_dated_change(dest: Path) -> str:
         f'value: ["24.04", "22.04"], effective: "{baseline_effective}"}}\n'
         "  - {check_id: os.database.ubuntu, "
         f'value: ["26.04"], effective: "{effective}", due: "{due}"}}\n'
+        "  - {check_id: os.mq.ubuntu, "
+        f'value: ["24.04", "22.04"], effective: "{baseline_effective}"}}\n'
+        "  - {check_id: os.mq.ubuntu, "
+        f'value: ["24.04"], effective: "{effective}", due: "{mq_due}"}}\n'
     )
     return str(dest)
 
@@ -203,7 +210,12 @@ def test_sites_rollout_with_dated_change(tmp_path):
 
     body = client.get("/api/sites").json()
     view = {s["site"]: s for s in body["sites"]}["ardctest"]["rollout"]
-    assert view["counts"] == {"overdue": 0, "pending": 1, "due_soon": 1}
+    assert view["counts"] == {
+        "overdue": 0,
+        "pending": 1,
+        "due_soon": 1,
+        "adopted": 1,
+    }
     ref = view["pending"][0]
     assert ref["check_id"] == "os.database.ubuntu"
     assert ref["target"] == ["26.04"]
@@ -213,11 +225,18 @@ def test_sites_rollout_with_dated_change(tmp_path):
         11,
     )  # tolerant of a midnight rollover mid-test
     assert view["next_due"] == ref["due"]
+    # The already-adopted (still in-flight) mq change is carried with its status.
+    assert [r["check_id"] for r in view["adopted"]] == ["os.mq.ubuntu"]
 
     # Narrowing the window demotes it from due-soon; it stays pending.
     narrow = client.get("/api/sites", params={"within": 5}).json()
     view = {s["site"]: s for s in narrow["sites"]}["ardctest"]["rollout"]
-    assert view["counts"] == {"overdue": 0, "pending": 1, "due_soon": 0}
+    assert view["counts"] == {
+        "overdue": 0,
+        "pending": 1,
+        "due_soon": 0,
+        "adopted": 1,
+    }
     assert narrow["within"] == 5
 
 
