@@ -7,10 +7,12 @@ from typing import Any
 
 from nectar_conformance.rollout import (
     ADOPTED,
+    DUE_SOON,
     NOT_APPLICABLE,
     OVERDUE,
     PENDING,
     rollout_status,
+    site_rollout,
 )
 
 AS_OF = date(2026, 6, 17)
@@ -132,3 +134,93 @@ def test_unevaluable_operator_is_not_applicable():
     change = _change(PAST, op="count_gte", target=3, check_id="hc")
     result = rollout_status([change], reports, AS_OF)[0]
     assert result["buckets"][NOT_APPLICABLE] == ["l"]
+
+
+# --- site_rollout: the per-site pivot -------------------------------------------------
+
+SOON = "2026-06-27"  # AS_OF + 10 days
+LATER = "2026-08-16"  # AS_OF + 60 days
+
+
+def test_site_rollout_pivots_buckets_per_site():
+    reports = {
+        # "a" adopted the img change but is overdue on the os change.
+        "a": _report(
+            [
+                _rule("img", "pass", [_check("v2")]),
+                _rule("os", "fail", [_check("20.04", "fail")]),
+            ]
+        ),
+        # "b" is pending on img and adopted on os.
+        "b": _report(
+            [
+                _rule("img", "pass", [_check("v1")]),
+                _rule("os", "pass", [_check("24.04")]),
+            ]
+        ),
+    }
+    changes = [
+        _change(SOON, check_id="img"),
+        _change(PAST, op="in_set", target=["24.04"], check_id="os"),
+    ]
+    pivot = site_rollout(rollout_status(changes, reports, AS_OF), AS_OF)
+
+    a, b = pivot["a"], pivot["b"]
+    assert [r["check_id"] for r in a[OVERDUE]] == ["os"]
+    assert a[OVERDUE][0]["days"] == (date(2026, 1, 1) - AS_OF).days < 0
+    assert a[PENDING] == []
+    assert a["counts"] == {OVERDUE: 1, PENDING: 0, DUE_SOON: 0}
+    assert a["next_due"] is None
+
+    assert [r["check_id"] for r in b[PENDING]] == ["img"]
+    assert b[PENDING][0]["days"] == 10
+    assert b["counts"] == {OVERDUE: 0, PENDING: 1, DUE_SOON: 1}
+    assert b["next_due"] == SOON
+
+
+def test_site_rollout_due_soon_window():
+    reports = {"a": _report([_rule("img", "pass", [_check("v1")])])}
+    changes = [_change(SOON), _change(LATER, check_id="img2")]
+    reports["a"]["results"].append(_rule("img2", "pass", [_check("v1")]))
+    rollout = rollout_status(changes, reports, AS_OF)
+
+    wide = site_rollout(rollout, AS_OF, due_soon_days=30)["a"]
+    assert wide["counts"] == {OVERDUE: 0, PENDING: 2, DUE_SOON: 1}
+    assert wide["next_due"] == SOON
+
+    narrow = site_rollout(rollout, AS_OF, due_soon_days=5)["a"]
+    assert narrow["counts"][DUE_SOON] == 0
+    assert narrow["counts"][PENDING] == 2
+
+
+def test_site_rollout_quiet_sites_get_zero_counts():
+    reports = {
+        "adopted": _report([_rule("img", "pass", [_check("v2")])]),
+        "na": _report([_rule("img", "skip", [])]),
+    }
+    pivot = site_rollout(
+        rollout_status([_change(FUTURE)], reports, AS_OF), AS_OF
+    )
+    for site in ("adopted", "na"):
+        assert pivot[site][OVERDUE] == []
+        assert pivot[site][PENDING] == []
+        assert pivot[site]["counts"] == {OVERDUE: 0, PENDING: 0, DUE_SOON: 0}
+        assert pivot[site]["next_due"] is None
+
+
+def test_site_rollout_empty_changes_is_empty():
+    assert site_rollout([], AS_OF) == {}
+
+
+def test_site_rollout_missing_due_is_never_due_soon():
+    # Defensive: list_changes always sets due, but the pivot must not crash without it.
+    reports = {"a": _report([_rule("img", "fail", [_check("v1", "fail")])])}
+    rollout = rollout_status(
+        [{"check_id": "img", "op": "equals", "target": "v2", "due": None}],
+        reports,
+        AS_OF,
+    )
+    view = site_rollout(rollout, AS_OF)["a"]
+    assert [r["check_id"] for r in view[OVERDUE]] == ["img"]
+    assert view[OVERDUE][0]["days"] is None
+    assert view["counts"] == {OVERDUE: 1, PENDING: 0, DUE_SOON: 0}

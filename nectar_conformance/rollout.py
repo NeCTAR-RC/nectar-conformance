@@ -18,6 +18,7 @@ ADOPTED = "adopted"
 PENDING = "pending"
 OVERDUE = "overdue"
 NOT_APPLICABLE = "not_applicable"
+DUE_SOON = "due_soon"
 
 # Statuses where the check actually applied to the site (so adoption is meaningful).
 _APPLICABLE_STATUSES = ("pass", "fail")
@@ -107,3 +108,67 @@ def rollout_status(
             }
         )
     return out
+
+
+def site_rollout(
+    rollout: list[dict], as_of: date, *, due_soon_days: int = 30
+) -> dict[str, dict]:
+    """Pivot :func:`rollout_status` output into a per-site view (pure, no I/O).
+
+    Pass the unfiltered rollout: which changes are worth showing is the caller's call,
+    not baked in here. ``days`` is recomputed from each change's absolute due date
+    against ``as_of`` — countdowns baked into stored reports go stale between refreshes.
+    Sites that are only ever adopted / not applicable still get an entry (zero counts),
+    so a consumer can tell "up to date" from "no data". ``due_soon`` counts pending
+    changes due within ``due_soon_days``.
+    """
+    sites: dict[str, dict] = {}
+
+    def entry(site: str) -> dict:
+        return sites.setdefault(
+            site,
+            {
+                OVERDUE: [],
+                PENDING: [],
+                "counts": {OVERDUE: 0, PENDING: 0, DUE_SOON: 0},
+                "next_due": None,
+            },
+        )
+
+    for change in rollout:
+        due = change.get("due")
+        try:
+            days = (date.fromisoformat(due) - as_of).days if due else None
+        except ValueError:
+            days = None
+        ref = {
+            "check_id": change["check_id"],
+            "title": change.get("title"),
+            "target": change.get("target"),
+            "due": due,
+            "days": days,
+        }
+        buckets = change["buckets"]
+        for site in buckets[OVERDUE]:
+            entry(site)[OVERDUE].append(ref)
+        for site in buckets[PENDING]:
+            entry(site)[PENDING].append(ref)
+        for site in buckets[ADOPTED] + buckets[NOT_APPLICABLE]:
+            entry(site)
+
+    for view in sites.values():
+        for bucket in (OVERDUE, PENDING):
+            view[bucket].sort(key=lambda r: (r["due"] or "", r["check_id"]))
+        pending = view[PENDING]
+        view["counts"] = {
+            OVERDUE: len(view[OVERDUE]),
+            PENDING: len(pending),
+            DUE_SOON: sum(
+                1
+                for r in pending
+                if r["days"] is not None and r["days"] <= due_soon_days
+            ),
+        }
+        dues = [r["due"] for r in pending if r["due"]]
+        view["next_due"] = min(dues) if dues else None
+    return sites
