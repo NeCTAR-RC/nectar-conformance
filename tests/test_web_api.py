@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -20,9 +21,8 @@ CATALOG_DIR = FIXTURES / "catalogs"
 CHECKS_DIR = str(FIXTURES / "checks")
 
 
-@pytest.fixture
-def client(tmp_path) -> TestClient:
-    # Populate the reports dir the way the refresh job would, then serve it.
+def _populate(tmp_path) -> None:
+    # Populate the reports dir the way the refresh job would.
     refresh_once(
         Config(checks_dir=CHECKS_DIR),
         tier="prod",
@@ -36,6 +36,9 @@ def client(tmp_path) -> TestClient:
         },
         reports_dir=tmp_path,
     )
+
+
+def _serve(tmp_path) -> TestClient:
     settings = WebSettings(
         config=Config(checks_dir=CHECKS_DIR),
         tier="prod",
@@ -45,13 +48,54 @@ def client(tmp_path) -> TestClient:
     return TestClient(create_app(settings))
 
 
+def _fail_last_run(tmp_path, site: str, message: str) -> None:
+    # Rewrite status.json as a total-failure refresh pass would leave it: errors
+    # recorded, no sites evaluated, last good reports untouched on disk.
+    path = tmp_path / "status.json"
+    status = json.loads(path.read_text())
+    status["sites"] = {}
+    status["errors"] = {site: message}
+    path.write_text(json.dumps(status))
+
+
+@pytest.fixture
+def client(tmp_path) -> TestClient:
+    _populate(tmp_path)
+    return _serve(tmp_path)
+
+
 def test_health(client):
     body = client.get("/api/health").json()
     assert body["status"] == "ok"
     assert body["tier"] == "prod"
     assert body["sites"] >= 1
+    assert body["failed_sites"] == []
+    assert body["last_attempt_at"] == body["reports_generated_at"]
     # The dashboard reads its own version off /health (see frontend App.jsx).
     assert body["version"] == __version__
+
+
+def test_health_degraded_when_last_refresh_failed(tmp_path):
+    _populate(tmp_path)
+    _fail_last_run(tmp_path, "ardctest", "PuppetDB query failed")
+    client = _serve(tmp_path)
+    resp = client.get("/api/health")
+    # Still 200: the k8s probes hit this route and the web pod itself is fine.
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "degraded"
+    assert body["failed_sites"] == ["ardctest"]
+
+
+def test_sites_flags_stale_report_when_site_errored(tmp_path):
+    _populate(tmp_path)
+    _fail_last_run(tmp_path, "ardctest", "PuppetDB query failed")
+    client = _serve(tmp_path)
+    sites = {s["site"]: s for s in client.get("/api/sites").json()["sites"]}
+    entry = sites["ardctest"]
+    # The last good report is still served, now flagged with the failure.
+    assert entry["error"] == "PuppetDB query failed"
+    assert entry["summary"]["total"] > 0
 
 
 def test_sites_lists_each_site_with_summary(client):

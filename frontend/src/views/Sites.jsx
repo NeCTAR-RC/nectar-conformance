@@ -28,13 +28,14 @@ export default function Sites() {
                     <Link to={`/sites/${s.site}`}>{s.site}</Link>
                   </td>
                   <td>
-                    {s.error ? (
-                      <span className="badge status-unknown" title={s.error}>
-                        error
-                      </span>
-                    ) : (
+                    {s.summary && (
                       <span className={`badge status-${s.summary.result}`}>
                         {s.summary.result}
+                      </span>
+                    )}
+                    {s.error && (
+                      <span className="badge status-unknown" title={s.error}>
+                        {s.summary ? 'stale' : 'error'}
                       </span>
                     )}
                   </td>

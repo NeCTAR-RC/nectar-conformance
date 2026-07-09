@@ -71,6 +71,83 @@ def test_refresh_records_errors_and_keeps_going(monkeypatch, tmp_path):
     assert status["errors"]["bad"] == "no nodes"
     assert (tmp_path / "reports" / "good.json").is_file()
     assert not (tmp_path / "reports" / "bad.json").exists()
+    # A partial failure still published reports, so freshness advances.
+    assert status["generated_at"] == status["last_attempt_at"]
+
+
+def test_refresh_total_failure_keeps_previous_generated_at(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(
+        refresh_mod, "run_check", lambda *a, site, **k: _fake_report(site)
+    )
+    refresh_once(
+        Config(),
+        tier="prod",
+        sites=["a"],
+        version=None,
+        source=None,
+        source_kwargs=None,
+        reports_dir=tmp_path,
+    )
+    # Pin the last good run's stamp so the assertion cannot pass by both runs
+    # landing in the same second.
+    saved = json.loads((tmp_path / "status.json").read_text())
+    saved["generated_at"] = "2026-01-01T00:00:00Z"
+    (tmp_path / "status.json").write_text(json.dumps(saved))
+
+    def fail(config, **kwargs):
+        raise SiteNotFoundError("PuppetDB query failed: connection refused")
+
+    monkeypatch.setattr(refresh_mod, "run_check", fail)
+    status = refresh_once(
+        Config(),
+        tier="prod",
+        sites=["a"],
+        version=None,
+        source=None,
+        source_kwargs=None,
+        reports_dir=tmp_path,
+    )
+    # Nothing was published: freshness must not advance, but the attempt is recorded
+    # and the last good report stays in place.
+    assert status["generated_at"] == "2026-01-01T00:00:00Z"
+    assert status["last_attempt_at"] != "2026-01-01T00:00:00Z"
+    assert status["errors"]["a"]
+    assert (tmp_path / "reports" / "a.json").is_file()
+
+
+def test_refresh_main_exits_nonzero_when_all_sites_fail(monkeypatch, tmp_path):
+    def fail(config, **kwargs):
+        raise SiteNotFoundError("PuppetDB query failed: connection refused")
+
+    monkeypatch.setattr(refresh_mod, "run_check", fail)
+    rc = refresh_mod.main(
+        ["--site", "a", "--reports-dir", str(tmp_path), "--tier", "prod"]
+    )
+    assert rc == 4
+
+
+def test_refresh_main_partial_failure_exits_zero(monkeypatch, tmp_path):
+    def fake(config, *, site, **kwargs):
+        if site == "bad":
+            raise SiteNotFoundError("no nodes")
+        return _fake_report(site)
+
+    monkeypatch.setattr(refresh_mod, "run_check", fake)
+    rc = refresh_mod.main(
+        [
+            "--site",
+            "good",
+            "--site",
+            "bad",
+            "--reports-dir",
+            str(tmp_path),
+            "--tier",
+            "prod",
+        ]
+    )
+    assert rc == 0
 
 
 def test_refresh_main_static(tmp_path):

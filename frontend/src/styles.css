@@ -112,6 +112,11 @@ body {
   font-size: 12px;
 }
 
+.freshness.degraded {
+  color: var(--warn);
+  font-weight: 600;
+}
+
 .version {
   color: var(--muted);
   font-size: 12px;
@@ -219,6 +224,11 @@ a {
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
+}
+
+/* A cell can show two badges (result + stale). */
+.badge + .badge {
+  margin-left: 6px;
 }
 
 .status-pass {

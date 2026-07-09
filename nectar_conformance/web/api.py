@@ -46,12 +46,18 @@ def build_router(settings: WebSettings, store: ReportStore) -> APIRouter:
     @router.get("/health")
     def health() -> dict:
         status = store.status()
+        errors = status.get("errors") or {}
         return {
-            "status": "ok",
+            # "degraded" means the last refresh recorded failures. Always HTTP 200:
+            # the k8s probes hit this route, and the web pod is healthy even when
+            # PuppetDB is not.
+            "status": "degraded" if errors else "ok",
             "version": __version__,
             "tier": tier,
             "reports_generated_at": status.get("generated_at"),
+            "last_attempt_at": status.get("last_attempt_at"),
             "age_seconds": _age_seconds(status.get("generated_at")),
+            "failed_sites": sorted(errors),
             "sites": len(store.site_ids()),
         }
 
@@ -59,9 +65,13 @@ def build_router(settings: WebSettings, store: ReportStore) -> APIRouter:
     def sites() -> dict:
         status = store.status()
         reports = store.all_reports()
-        items = [site_summary(s, r) for s, r in reports.items()]
-        # Surface sites that failed to evaluate (no report written this run).
         errors = status.get("errors") or {}
+        # A site that failed its last evaluation still serves its last good report;
+        # attach the error so the UI can flag that report as stale.
+        items = [
+            site_summary(s, r, error=errors.get(s)) for s, r in reports.items()
+        ]
+        # Sites that failed and have no report at all get an error-only row.
         have = {item["site"] for item in items}
         for site, message in errors.items():
             if site not in have:

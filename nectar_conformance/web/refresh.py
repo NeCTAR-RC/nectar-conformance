@@ -4,7 +4,10 @@ This is the only PuppetDB-touching piece of the web stack. The k8s CronJob runs 
 ``--interval`` makes it loop for docker compose and local dev. It writes one report per site
 plus a ``status.json`` into ``--reports-dir`` (the shared PVC mount), atomically so the web
 reader never sees a half-written file. A site that fails to evaluate is recorded in
-``status.json`` and skipped; its last good report (if any) is left in place.
+``status.json`` and skipped; its last good report (if any) is left in place. A pass that
+publishes nothing keeps the previous ``generated_at`` (the dashboard's freshness stamp) and,
+in one-shot mode, exits non-zero so the CronJob goes red instead of silently serving stale
+reports.
 """
 
 from __future__ import annotations
@@ -33,6 +36,14 @@ def _atomic_write(path: Path, text: str) -> None:
     tmp = path.with_name(f".{path.name}.tmp")
     tmp.write_text(text)
     os.replace(tmp, path)
+
+
+def _previous_generated_at(reports_dir: Path) -> str | None:
+    try:
+        status = json.loads((reports_dir / "status.json").read_text())
+    except (OSError, ValueError):
+        return None
+    return status.get("generated_at")
 
 
 def _resolve_sites(config, *, tier: str, explicit: list[str]) -> list[str]:
@@ -86,9 +97,15 @@ def refresh_once(
         if stale.stem not in current:
             stale.unlink()
 
+    # A pass that publishes nothing is not a refresh: keep the previous generated_at so
+    # the dashboard's freshness reflects the reports actually on disk.
+    now = _now_iso()
     status = {
         "tier": tier,
-        "generated_at": _now_iso(),
+        "generated_at": now
+        if site_status
+        else _previous_generated_at(reports_dir),
+        "last_attempt_at": now,
         "version": version,
         "source": source or config.source,
         "sites": site_status,
@@ -195,11 +212,11 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
 
-    def run_pass() -> None:
+    def run_pass() -> dict:
         sites = _resolve_sites(config, tier=tier, explicit=args.site)
         if not sites:
             log.warning("no sites to evaluate")
-        refresh_once(
+        return refresh_once(
             config,
             tier=tier,
             sites=sites,
@@ -220,10 +237,13 @@ def main(argv: list[str] | None = None) -> int:
             time.sleep(args.interval)
 
     try:
-        run_pass()
+        status = run_pass()
     except ConformanceError as exc:
         log.error("refresh failed: %s", exc)
         return 3
+    if status["errors"] and not status["sites"]:
+        log.error("all %d sites failed to evaluate", len(status["errors"]))
+        return 4
     return 0
 
 

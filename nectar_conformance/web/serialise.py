@@ -51,13 +51,17 @@ def worst_failing_severity(report: dict) -> str | None:
     return None
 
 
-def site_summary(site: str, report: dict) -> dict:
-    """Compact per-site entry for the sites list."""
+def site_summary(site: str, report: dict, error: str | None = None) -> dict:
+    """Compact per-site entry for the sites list.
+
+    ``error`` is the site's failure from the most recent refresh, if any; a summary can
+    carry both a (last good, now stale) report and an error.
+    """
     return {
         "site": site,
         "summary": report.get("summary"),
         "generated_at": report.get("generated_at"),
         "conformance_version": report.get("conformance_version"),
         "worst_severity": worst_failing_severity(report),
-        "error": None,
+        "error": error,
     }

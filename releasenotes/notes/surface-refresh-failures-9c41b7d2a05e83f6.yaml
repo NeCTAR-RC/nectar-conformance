@@ -1,0 +1,14 @@
+---
+fixes:
+  - |
+    A refresh pass in which every site failed to evaluate (for example when
+    PuppetDB is unreachable) previously still advanced the report timestamp
+    and exited zero, so the dashboard showed reports as freshly refreshed
+    while silently serving stale data and the Kubernetes CronJob stayed
+    green. The refresh now only advances ``generated_at`` when at least one
+    report is published, records the run time separately as
+    ``last_attempt_at``, and exits non-zero (4) when all sites fail.
+    ``/api/health`` reports ``status: degraded`` with the failing sites
+    whenever the last run recorded errors, the sites list flags a site whose
+    last evaluation failed as stale while still serving its last good
+    report, and the dashboard header shows a refresh-failing warning.

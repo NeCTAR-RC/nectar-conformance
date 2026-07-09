@@ -14,6 +14,8 @@ export default function App() {
   const tier = health.data?.tier
   const age = health.data?.age_seconds
   const version = health.data?.version
+  const degraded = health.data?.status === 'degraded'
+  const failedSites = health.data?.failed_sites || []
   const { theme, toggleTheme } = useTheme()
 
   return (
@@ -31,8 +33,16 @@ export default function App() {
           <NavLink to="/changes">Changes</NavLink>
           <NavLink to="/rollout">Rollout</NavLink>
         </nav>
-        <span className="freshness" title="When the refresh job last evaluated sites">
+        <span
+          className={degraded ? 'freshness degraded' : 'freshness'}
+          title={
+            degraded
+              ? `Last refresh failed for: ${failedSites.join(', ')}`
+              : 'When reports were last successfully refreshed'
+          }
+        >
           reports {fmtAge(age)}
+          {degraded && ' (refresh failing)'}
         </span>
         {version && (
           <span className="version" title="nectar-conformance version">

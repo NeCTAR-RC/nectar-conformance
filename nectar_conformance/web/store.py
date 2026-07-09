@@ -17,6 +17,7 @@ from pathlib import Path
 _EMPTY_STATUS = {
     "tier": None,
     "generated_at": None,
+    "last_attempt_at": None,
     "version": None,
     "source": None,
     "sites": {},
