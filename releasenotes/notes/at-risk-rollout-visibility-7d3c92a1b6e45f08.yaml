@@ -15,6 +15,5 @@ features:
     next due date), recomputed from the absolute due dates at request time so
     stored reports never show stale countdowns. Finished rollouts (due passed,
     everyone adopted) are excluded. The Sites list shows each rollout's status
-    per site with a colour-coded line, the Rollout page gains a site-centric
-    summary table, and site detail pages highlight advisories due within
-    30 days.
+    per site with a colour-coded line, and site detail pages highlight
+    advisories due within 30 days.
