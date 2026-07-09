@@ -122,6 +122,48 @@ def test_check_run_as_of_live_label(capsys):
     )  # the incomplete fixture site still fails host-count checks
 
 
+# The fixture site observes ubuntu 24.04 on its database node, so the baseline passes
+# and the dated ["26.04"] entry is a pending change the site has not adopted.
+_AT_RISK_CHANGELOG = """\
+entries:
+  - {check_id: os.database.ubuntu, value: ["24.04", "22.04"], effective: "2026-01-01"}
+  - {check_id: os.database.ubuntu, value: ["26.04"], effective: "2026-06-01", due: "2026-07-01"}
+"""
+
+
+def test_check_run_due_within_is_display_only(tmp_path, capsys):
+    checks = _checks_dir(tmp_path, _AT_RISK_CHANGELOG)
+    args = [
+        "check",
+        "run",
+        "--site",
+        "ardctest",
+        "--as-of",
+        "2026-06-17",  # 14 days before the 2026-07-01 due date
+        "--checks-dir",
+        checks,
+        "--source",
+        "static",
+        "--catalog-dir",
+        str(CATALOG_DIR),
+        "--facts-dir",
+        str(FACTS_DIR),
+    ]
+    wide = main(args + ["--due-within", "30"])
+    out_wide = capsys.readouterr().out
+    narrow = main(args + ["--due-within", "7"])
+    out_narrow = capsys.readouterr().out
+    default = main(args)
+    capsys.readouterr()
+
+    assert "At risk: 1 passing check(s) will fail within 30 days" in out_wide
+    assert "will FAIL" in out_wide
+    assert "At risk:" not in out_narrow
+    assert "Due:" in out_narrow  # still advised, just not flagged at risk
+    # Display only: the window never changes the exit code.
+    assert wide == narrow == default == 0
+
+
 def test_version_list_exit_0(capsys):
     code = main(["version", "list", "--checks-dir", _CHECKS])
     out = capsys.readouterr().out

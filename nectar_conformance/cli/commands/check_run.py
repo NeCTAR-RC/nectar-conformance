@@ -66,6 +66,15 @@ class CheckRun(Command):
             "--format", choices=["human", "json"], default="human"
         )
         parser.add_argument(
+            "--due-within",
+            type=int,
+            default=30,
+            metavar="DAYS",
+            help="human report only: flag passing checks whose pending change is due "
+            "within this many days as at risk (default: 30; never affects the exit "
+            "code)",
+        )
+        parser.add_argument(
             "--severity-threshold",
             choices=["info", "warning", "error"],
             default="error",
@@ -132,5 +141,7 @@ class CheckRun(Command):
         if parsed_args.format == "json":
             json_report.render(report, self.app.stdout)
         else:
-            human.render(report, self.app.stdout)
+            human.render(
+                report, self.app.stdout, due_within=parsed_args.due_within
+            )
         return exit_code(report, parsed_args.severity_threshold)
