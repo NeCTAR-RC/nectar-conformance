@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import date, timedelta
 import json
 from pathlib import Path
+import shutil
 
 import pytest
 from starlette.testclient import TestClient
@@ -21,26 +23,28 @@ CATALOG_DIR = FIXTURES / "catalogs"
 CHECKS_DIR = str(FIXTURES / "checks")
 
 
-def _populate(tmp_path) -> None:
+def _populate(
+    tmp_path, checks_dir: str = CHECKS_DIR, facts_dir: str | None = None
+) -> None:
     # Populate the reports dir the way the refresh job would.
     refresh_once(
-        Config(checks_dir=CHECKS_DIR),
+        Config(checks_dir=checks_dir),
         tier="prod",
         sites=["ardctest"],
         version=None,
         source="static",
         source_kwargs={
             "catalog_dir": str(CATALOG_DIR),
-            "facts_dir": None,
+            "facts_dir": facts_dir,
             "site_repo": None,
         },
         reports_dir=tmp_path,
     )
 
 
-def _serve(tmp_path) -> TestClient:
+def _serve(tmp_path, checks_dir: str = CHECKS_DIR) -> TestClient:
     settings = WebSettings(
-        config=Config(checks_dir=CHECKS_DIR),
+        config=Config(checks_dir=checks_dir),
         tier="prod",
         reports_dir=tmp_path,
         static_dir=None,
@@ -149,6 +153,90 @@ def test_versions_diff_identity(client):
     ).json()
     assert body["changed"] == []
     assert body["added"] == []
+
+
+_ZERO_ROLLOUT = {
+    "overdue": [],
+    "pending": [],
+    "counts": {"overdue": 0, "pending": 0, "due_soon": 0},
+    "next_due": None,
+}
+
+
+def _checks_with_dated_change(dest: Path) -> str:
+    # A purpose-built checks dir: the mirrored definitions plus a changelog whose dated
+    # entry straddles the real wall clock (the /sites endpoint judges at date.today()).
+    # The fixture site observes ubuntu 24.04 on its database node, so it has not
+    # adopted the upcoming ["26.04"] value: pending, due in 10 days.
+    today = date.today()
+    baseline_effective = (today - timedelta(days=100)).isoformat()
+    effective = (today - timedelta(days=10)).isoformat()
+    due = (today + timedelta(days=10)).isoformat()
+    shutil.copytree(Path(CHECKS_DIR) / "definitions", dest / "definitions")
+    (dest / "changelog.yaml").write_text(
+        "entries:\n"
+        "  - {check_id: os.database.ubuntu, "
+        f'value: ["24.04", "22.04"], effective: "{baseline_effective}"}}\n'
+        "  - {check_id: os.database.ubuntu, "
+        f'value: ["26.04"], effective: "{effective}", due: "{due}"}}\n'
+    )
+    return str(dest)
+
+
+def test_sites_rollout_zero_with_baseline_changelog(client):
+    # The frozen fixture changelog has no dated entries, so every report-bearing site
+    # reports the explicit zero shape ("up to date"), distinct from null ("no data").
+    body = client.get("/api/sites").json()
+    assert body["within"] == 30
+    assert body["as_of"] == date.today().isoformat()
+    entry = {s["site"]: s for s in body["sites"]}["ardctest"]
+    assert entry["rollout"] == _ZERO_ROLLOUT
+
+
+def test_sites_rollout_with_dated_change(tmp_path):
+    checks = _checks_with_dated_change(tmp_path / "checks")
+    reports = tmp_path / "reports"
+    reports.mkdir()
+    # The OS check reads a fact, so this run needs the fixture facts.
+    _populate(reports, checks_dir=checks, facts_dir=str(FIXTURES / "facts"))
+    client = _serve(reports, checks_dir=checks)
+
+    body = client.get("/api/sites").json()
+    view = {s["site"]: s for s in body["sites"]}["ardctest"]["rollout"]
+    assert view["counts"] == {"overdue": 0, "pending": 1, "due_soon": 1}
+    ref = view["pending"][0]
+    assert ref["check_id"] == "os.database.ubuntu"
+    assert ref["target"] == ["26.04"]
+    assert ref["days"] in (
+        9,
+        10,
+        11,
+    )  # tolerant of a midnight rollover mid-test
+    assert view["next_due"] == ref["due"]
+
+    # Narrowing the window demotes it from due-soon; it stays pending.
+    narrow = client.get("/api/sites", params={"within": 5}).json()
+    view = {s["site"]: s for s in narrow["sites"]}["ardctest"]["rollout"]
+    assert view["counts"] == {"overdue": 0, "pending": 1, "due_soon": 0}
+    assert narrow["within"] == 5
+
+
+def test_sites_within_param_validation(client):
+    for bad in ("-1", "999", "abc"):
+        assert (
+            client.get("/api/sites", params={"within": bad}).status_code == 422
+        )
+
+
+def test_sites_error_only_row_has_null_rollout(tmp_path):
+    # A site that errored and has no report cannot be judged: rollout is null, while
+    # report-bearing sites still carry the explicit shape.
+    _populate(tmp_path)
+    _fail_last_run(tmp_path, "ghost", "PuppetDB query failed")
+    client = _serve(tmp_path)
+    sites = {s["site"]: s for s in client.get("/api/sites").json()["sites"]}
+    assert sites["ghost"]["rollout"] is None
+    assert sites["ardctest"]["rollout"] == _ZERO_ROLLOUT
 
 
 def test_changes_pending_and_rollout_shape(client):

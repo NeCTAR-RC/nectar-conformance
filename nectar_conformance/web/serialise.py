@@ -51,11 +51,18 @@ def worst_failing_severity(report: dict) -> str | None:
     return None
 
 
-def site_summary(site: str, report: dict, error: str | None = None) -> dict:
+def site_summary(
+    site: str,
+    report: dict,
+    error: str | None = None,
+    rollout: dict | None = None,
+) -> dict:
     """Compact per-site entry for the sites list.
 
     ``error`` is the site's failure from the most recent refresh, if any; a summary can
-    carry both a (last good, now stale) report and an error.
+    carry both a (last good, now stale) report and an error. ``rollout`` is the site's
+    :func:`nectar_conformance.rollout.site_rollout` view (None when there is no report
+    to judge adoption from).
     """
     return {
         "site": site,
@@ -64,4 +71,5 @@ def site_summary(site: str, report: dict, error: str | None = None) -> dict:
         "conformance_version": report.get("conformance_version"),
         "worst_severity": worst_failing_severity(report),
         "error": error,
+        "rollout": rollout,
     }

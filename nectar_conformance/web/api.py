@@ -12,7 +12,13 @@ from fastapi import APIRouter, HTTPException, Query
 
 from nectar_conformance import __version__
 from nectar_conformance.errors import VersionError
-from nectar_conformance.rollout import rollout_status
+from nectar_conformance.rollout import (
+    DUE_SOON,
+    OVERDUE,
+    PENDING,
+    rollout_status,
+    site_rollout,
+)
 from nectar_conformance.rules.loader import load_changelog
 from nectar_conformance.service import (
     change_timeline,
@@ -26,6 +32,17 @@ from nectar_conformance.service import (
 from nectar_conformance.web.serialise import rule_to_dict, site_summary
 from nectar_conformance.web.settings import WebSettings
 from nectar_conformance.web.store import ReportStore
+
+
+def _zero_site_rollout() -> dict:
+    # A report-bearing site absent from the pivot has no dated changes in flight.
+    # Fresh dict per site so callers can never share (and mutate) one instance.
+    return {
+        OVERDUE: [],
+        PENDING: [],
+        "counts": {OVERDUE: 0, PENDING: 0, DUE_SOON: 0},
+        "next_due": None,
+    }
 
 
 def _age_seconds(generated_at: str | None) -> int | None:
@@ -62,14 +79,30 @@ def build_router(settings: WebSettings, store: ReportStore) -> APIRouter:
         }
 
     @router.get("/sites")
-    def sites() -> dict:
+    def sites(within: int = Query(30, ge=0, le=365)) -> dict:
         status = store.status()
         reports = store.all_reports()
         errors = status.get("errors") or {}
+        # Per-site rollout exposure, recomputed from the changelog's absolute due
+        # dates at request time (countdowns baked into stored reports go stale).
+        today = date.today()
+        pivot = site_rollout(
+            rollout_status(
+                list_changes(config, tier=tier, as_of=today), reports, today
+            ),
+            today,
+            due_soon_days=within,
+        )
         # A site that failed its last evaluation still serves its last good report;
         # attach the error so the UI can flag that report as stale.
         items = [
-            site_summary(s, r, error=errors.get(s)) for s, r in reports.items()
+            site_summary(
+                s,
+                r,
+                error=errors.get(s),
+                rollout=pivot.get(s, _zero_site_rollout()),
+            )
+            for s, r in reports.items()
         ]
         # Sites that failed and have no report at all get an error-only row.
         have = {item["site"] for item in items}
@@ -83,11 +116,14 @@ def build_router(settings: WebSettings, store: ReportStore) -> APIRouter:
                         "conformance_version": None,
                         "worst_severity": None,
                         "error": message,
+                        "rollout": None,
                     }
                 )
         return {
             "tier": tier,
             "generated_at": status.get("generated_at"),
+            "as_of": today.isoformat(),
+            "within": within,
             "sites": sorted(items, key=lambda item: item["site"]),
         }
 
