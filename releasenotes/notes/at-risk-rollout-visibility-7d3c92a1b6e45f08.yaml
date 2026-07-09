@@ -1,0 +1,18 @@
+---
+features:
+  - |
+    Checks that pass today but will fail when a dated change falls due are now
+    surfaced explicitly. ``check run`` gains a display-only ``--due-within DAYS``
+    flag (default 30): the human report marks each at-risk check's ``Due:`` line
+    with ``will FAIL`` and adds an ``At risk:`` summary listing passing checks
+    whose pending change is due within the window. Exit codes and the JSON
+    report schema are unchanged.
+  - |
+    The web dashboard now shows per-site rollout exposure. ``/api/sites``
+    accepts a ``within`` query parameter (default 30 days) and each site entry
+    carries a ``rollout`` block with its overdue and pending dated changes, a
+    due-soon count and the next due date, recomputed from the absolute due
+    dates at request time so stored reports never show stale countdowns. The
+    Sites list gains overdue and due-soon badges, the Rollout page a
+    site-centric summary table, and site detail pages highlight advisories due
+    within 30 days.
