@@ -4,15 +4,8 @@
     "type": "object",
     "additionalProperties": false,
     "required": ["id", "title", "selector"],
-    "properties": {
-      "id": {"type": "string", "pattern": "^[a-z0-9]+(\\.[a-z0-9_]+)+$"},
-      "title": {"type": "string", "minLength": 1},
-      "description": {"type": "string"},
-      "spec_section": {"type": "string"},
-      "severity": {"enum": ["error", "warning", "info"]},
-      "kind": {"enum": ["declarative", "plugin"]},
-      "optional": {"type": "boolean"},
-      "selector": {
+    "$defs": {
+      "base_selector": {
         "type": "object",
         "additionalProperties": false,
         "required": ["type"],
@@ -22,8 +15,36 @@
           "resource_type": {"type": "string"},
           "resource_title": {"type": "string"},
           "path": {"type": "string"},
-          "value": {}
+          "value": {},
+          "match": {"enum": ["equals", "present"]}
         }
+      }
+    },
+    "properties": {
+      "id": {"type": "string", "pattern": "^[a-z0-9]+(\\.[a-z0-9_]+)+$"},
+      "title": {"type": "string", "minLength": 1},
+      "description": {"type": "string"},
+      "spec_section": {"type": "string"},
+      "severity": {"enum": ["error", "warning", "info"]},
+      "kind": {"enum": ["declarative", "plugin"]},
+      "optional": {"type": "boolean"},
+      "selector": {
+        "anyOf": [
+          {"$ref": "#/$defs/base_selector"},
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "selectors"],
+            "properties": {
+              "type": {"const": "all_of"},
+              "selectors": {
+                "type": "array",
+                "minItems": 2,
+                "items": {"$ref": "#/$defs/base_selector"}
+              }
+            }
+          }
+        ]
       },
       "query": {
         "type": "object",

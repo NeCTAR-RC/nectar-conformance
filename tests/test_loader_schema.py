@@ -57,6 +57,60 @@ def test_unknown_operator_in_definition_rejected():
         validate_definition(bad)
 
 
+def _composite(selector):
+    return {
+        "id": "x.composite",
+        "title": "composite selector",
+        "selector": selector,
+        "query": {"type": "fact", "path": "kmods.kvm_intel.parameters.nested"},
+        "assertion": {"op": "in_set"},
+    }
+
+
+def test_composite_selector_accepted():
+    validate_definition(
+        _composite(
+            {
+                "type": "all_of",
+                "selectors": [
+                    {"type": "contains_class", "class": "c"},
+                    {"type": "fact_match", "path": "p", "match": "present"},
+                ],
+            }
+        )
+    )
+
+
+def test_nested_composite_selector_rejected():
+    # all_of is one level deep: a composite may not contain another composite.
+    inner = {
+        "type": "all_of",
+        "selectors": [{"type": "all"}, {"type": "all"}],
+    }
+    with pytest.raises(RuleError):
+        validate_definition(
+            _composite(
+                {"type": "all_of", "selectors": [inner, {"type": "all"}]}
+            )
+        )
+
+
+def test_composite_selector_needs_two_clauses():
+    with pytest.raises(RuleError):
+        validate_definition(
+            _composite({"type": "all_of", "selectors": [{"type": "all"}]})
+        )
+
+
+def test_unknown_fact_match_mode_rejected():
+    with pytest.raises(RuleError):
+        validate_definition(
+            _composite(
+                {"type": "fact_match", "path": "p", "match": "sometimes"}
+            )
+        )
+
+
 def test_malformed_changelog_rejected():
     bad = {
         "entries": [{"check_id": "a.b"}]

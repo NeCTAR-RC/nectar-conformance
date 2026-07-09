@@ -1,0 +1,12 @@
+---
+features:
+  - |
+    Check definitions may now combine selector clauses: a selector of type
+    ``all_of`` takes a ``selectors`` list and matches the nodes that satisfy
+    every clause (AND). ``fact_match`` selectors additionally accept
+    ``match: present`` to select the nodes where the fact path exists,
+    regardless of its value; the default (``match: equals``) keeps the
+    existing exact-equality behaviour. Existing single-clause definitions are
+    unaffected. Together these let a per-node check scope to, for example,
+    "compute nodes that have the kvm_intel module loaded" and assert on the
+    module's parameters with clean per-node PASS/FAIL results.

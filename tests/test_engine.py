@@ -12,10 +12,12 @@ from conftest import (
 )
 
 from nectar_conformance.engine.runner import evaluate
+from nectar_conformance.engine.selectors import resolve as resolve_selector
 from nectar_conformance.model import SiteModel
 from nectar_conformance.results.model import Status
 from nectar_conformance.rules.changelog import fold
 from nectar_conformance.rules.model import ChangeEntry, Changelog
+from nectar_conformance.rules.model import CheckDef, Rule, Selector
 
 # Fold the frozen fixture changelog (see conftest), so adding shipped entries never breaks
 # these engine tests. The default as_of is a date on which every fixture baseline is enforced.
@@ -234,3 +236,133 @@ def test_rollout_wrong_value_fails_before_due(site_model):
         "nova.compute.image_tag"
     ]
     assert rr.status is Status.FAIL
+
+
+# --- composite (all_of) selectors and fact_match presence matching ---
+
+_COMPUTE = "nectar::profile::nova::compute"
+
+
+def _kvm(module, nested):
+    return {"kmods": {module: {"parameters": {"nested": nested}}}}
+
+
+def _site(*nodes):
+    return SiteModel("ardctest", "test", "2026-06-15T00:00:00Z", tuple(nodes))
+
+
+def test_fact_match_present_selects_on_existence_not_value():
+    model = _site(
+        make_node("a.example.test", facts=_kvm("kvm_intel", "N")),
+        make_node("b.example.test", facts=_kvm("kvm_intel", "Y")),
+        make_node("c.example.test", facts=_kvm("kvm_amd", "0")),
+    )
+    sel = Selector(
+        type="fact_match",
+        params={"path": "kmods.kvm_intel", "match": "present"},
+    )
+    assert [n.certname for n in resolve_selector(model, sel)] == [
+        "a.example.test",
+        "b.example.test",
+    ]
+
+
+def test_fact_match_default_equality_unchanged():
+    model = _site(
+        make_node("a.example.test", facts=_kvm("kvm_intel", "N")),
+        make_node("b.example.test", facts=_kvm("kvm_intel", "Y")),
+    )
+    sel = Selector(
+        type="fact_match",
+        params={"path": "kmods.kvm_intel.parameters.nested", "value": "Y"},
+    )
+    assert [n.certname for n in resolve_selector(model, sel)] == [
+        "b.example.test"
+    ]
+
+
+def test_all_of_selector_intersects_clauses_preserving_site_order():
+    model = _site(
+        make_node(
+            "cc1.example.test",
+            classes=[_COMPUTE],
+            facts=_kvm("kvm_intel", "N"),
+        ),
+        make_node("cc2.example.test", classes=[_COMPUTE]),  # class only
+        make_node(
+            "ci1.example.test", facts=_kvm("kvm_intel", "Y")
+        ),  # fact only
+        make_node(
+            "cc3.example.test",
+            classes=[_COMPUTE],
+            facts=_kvm("kvm_intel", "Y"),
+        ),
+    )
+    sel = Selector(
+        type="all_of",
+        params={
+            "selectors": [
+                {"type": "contains_class", "class": _COMPUTE},
+                {
+                    "type": "fact_match",
+                    "path": "kmods.kvm_intel",
+                    "match": "present",
+                },
+            ]
+        },
+    )
+    assert [n.certname for n in resolve_selector(model, sel)] == [
+        "cc1.example.test",
+        "cc3.example.test",
+    ]
+
+
+def test_all_of_check_is_per_node_pass_fail_without_unknowns():
+    # The nested-virt shape: scope by class AND module presence, then read the
+    # module's fact. Other-vendor computes and non-compute hosts are simply not
+    # selected, so a per-vendor check yields clean PASS/FAIL with no UNKNOWNNs.
+    check = CheckDef.from_dict(
+        {
+            "id": "nova.compute.nested_virt.intel",
+            "title": "Nested virtualisation is disabled on Intel compute nodes",
+            "selector": {
+                "type": "all_of",
+                "selectors": [
+                    {"type": "contains_class", "class": _COMPUTE},
+                    {
+                        "type": "fact_match",
+                        "path": "kmods.kvm_intel",
+                        "match": "present",
+                    },
+                ],
+            },
+            "query": {
+                "type": "fact",
+                "path": "kmods.kvm_intel.parameters.nested",
+            },
+            "assertion": {"op": "in_set"},
+        }
+    )
+    rule = Rule(check=check, expected=["N", "0"], severity="error")
+    model = _site(
+        make_node(
+            "cc1.example.test",
+            classes=[_COMPUTE],
+            facts=_kvm("kvm_intel", "N"),
+        ),
+        make_node(
+            "cc2.example.test",
+            classes=[_COMPUTE],
+            facts=_kvm("kvm_intel", "Y"),
+        ),
+        make_node(
+            "cc3.example.test", classes=[_COMPUTE], facts=_kvm("kvm_amd", "1")
+        ),
+        make_node("ci1.example.test", facts=_kvm("kvm_intel", "Y")),
+    )
+    rr = evaluate(model, [rule], VERSION).rule_results[0]
+    statuses = {c.node: c.status for c in rr.results}
+    assert statuses == {
+        "cc1.example.test": Status.PASS,
+        "cc2.example.test": Status.FAIL,
+    }
