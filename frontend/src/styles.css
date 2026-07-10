@@ -339,10 +339,6 @@ a {
   background: var(--muted);
 }
 
-.dot-adopted {
-  background: var(--good);
-}
-
 .cols {
   display: flex;
   gap: 20px;

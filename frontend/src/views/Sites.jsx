@@ -10,17 +10,15 @@ import {
   fmtValue,
 } from '../ui.jsx'
 
-// One in-flight rollout's status for this site: a colored dot, the check, and how
+// One outstanding rollout's status for this site: a colored dot, the check, and how
 // urgent it is. `days` comes from the API, computed at request time, so it is fresh.
 function RolloutLine({ change, kind }) {
   const status =
     kind === 'overdue'
       ? { cls: 'overdue', text: fmtDueIn(change.days) }
-      : kind === 'adopted'
-        ? { cls: 'adopted', text: 'adopted' }
-        : change.days != null && change.days <= DUE_SOON_DAYS
-          ? { cls: 'due-soon', text: `due ${fmtDueIn(change.days)}` }
-          : { cls: 'pending', text: `due ${fmtDueIn(change.days)}` }
+      : change.days != null && change.days <= DUE_SOON_DAYS
+        ? { cls: 'due-soon', text: `due ${fmtDueIn(change.days)}` }
+        : { cls: 'pending', text: `due ${fmtDueIn(change.days)}` }
   return (
     <div
       className="small roll-line"
@@ -35,18 +33,21 @@ function RolloutLine({ change, kind }) {
   )
 }
 
-// Requirement: the status of every in-flight rollout, per site — overdue screams,
-// due-soon warns, adopted reassures. Finished rollouts are already filtered out
-// server-side, so this list stays short.
+// Requirement: each rollout this site still has to act on — overdue screams,
+// due-soon warns. Adopted changes need no action, so they are not listed; a site
+// that has adopted every in-flight change reads "up to date".
 function RolloutCell({ rollout }) {
   if (!rollout) return <span className="muted">—</span>
   const lines = [
     ...rollout.overdue.map((c) => [c, 'overdue']),
     ...rollout.pending.map((c) => [c, 'pending']),
-    ...rollout.adopted.map((c) => [c, 'adopted']),
   ]
   if (lines.length === 0) {
-    return <span className="muted small">no rollouts</span>
+    return (
+      <span className="muted small">
+        {rollout.counts.adopted > 0 ? 'up to date' : 'no rollouts'}
+      </span>
+    )
   }
   return lines.map(([change, kind]) => (
     <RolloutLine
