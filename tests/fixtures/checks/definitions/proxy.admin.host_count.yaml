@@ -3,7 +3,6 @@ id: proxy.admin.host_count
 title: At least the required number of admin proxy hosts
 description: The site must run enough admin proxy hosts for redundancy.
 spec_section: "2.3"
-severity: error
 kind: declarative
 selector:
   type: all

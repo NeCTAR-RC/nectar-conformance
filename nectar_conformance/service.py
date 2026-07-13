@@ -223,7 +223,6 @@ def _change_entry_to_dict(entry: ChangeEntry) -> dict:
         "effective": entry.effective,
         "due": entry.due,
         "tier": entry.tier,
-        "severity": entry.severity,
         "note": entry.note,
     }
 
@@ -291,7 +290,6 @@ def list_changes(config: Config, *, tier: str, as_of: date) -> list[dict]:
                 "effective": e.effective,
                 "due": e.due,
                 "tier": e.tier,
-                "severity": e.severity or check.severity,
                 "note": e.note,
             }
         )
@@ -323,8 +321,6 @@ def _entry_to_mapping(entry: ChangeEntry) -> dict:
         out["due"] = entry.due
     if entry.tier != "all":  # "all" is the default, kept implicit as elsewhere
         out["tier"] = entry.tier
-    if entry.severity is not None:
-        out["severity"] = entry.severity
     if entry.note is not None:
         out["note"] = entry.note
     return out

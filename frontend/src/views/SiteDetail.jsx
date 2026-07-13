@@ -5,7 +5,6 @@ import {
   CheckLink,
   DUE_SOON_DAYS,
   Score,
-  SeverityBadge,
   StatusBadge,
   daysUntil,
   fmtDueIn,
@@ -42,7 +41,6 @@ export default function SiteDetail() {
               <thead>
                 <tr>
                   <th>Status</th>
-                  <th>Severity</th>
                   <th>Check</th>
                   <th>Detail</th>
                 </tr>
@@ -71,9 +69,6 @@ function RuleRow({ rule }) {
     <tr className={`rule-${rule.status}`}>
       <td>
         <StatusBadge status={rule.status} />
-      </td>
-      <td>
-        <SeverityBadge severity={rule.severity} />
       </td>
       <td>
         <div>

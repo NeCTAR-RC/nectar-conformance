@@ -77,9 +77,9 @@ For a truly offline check (no deploy, no node runs), produce `after.json` with t
 static source by compiling the proposed branch (`--source static --site-repo ...`); that
 needs the environment's modules assembled, which is what octocatalog-diff / r10k do.
 
-Exit codes: `0` conformant, `1` conformance failure at or above the severity
-threshold, `2` usage error, `3` operational error (PuppetDB unreachable, etc.).
-`report diff` exits `1` if the change introduces any new failure.
+Exit codes: `0` conformant, `1` any conformance failure, `2` usage error, `3`
+operational error (PuppetDB unreachable, etc.). `report diff` exits `1` if the
+change introduces any new failure.
 
 ## Development
 

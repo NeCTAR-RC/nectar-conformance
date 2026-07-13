@@ -7,7 +7,6 @@ description: >
   the neutron-plugin-linuxbridge-agent package (the agent itself, not the kolla image
   name, which can contain "linuxbridge" on OVN metadata agents).
 spec_section: "2.2.4"
-severity: error
 kind: declarative
 selector:
   type: all

@@ -5,7 +5,6 @@ description: >
   The message queue hosts must pin Erlang to the approved version, because RabbitMQ is
   sensitive to the Erlang release it runs against (profile::core::rabbitmq::erlang_pin_version).
 spec_section: "2.2.9"
-severity: warning
 kind: declarative
 selector:
   type: contains_class

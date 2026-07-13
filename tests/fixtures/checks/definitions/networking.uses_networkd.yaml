@@ -5,7 +5,6 @@ description: >
   Hosts must use the systemd-networkd module for network configuration rather than
   legacy networking tooling.
 spec_section: "2.4"
-severity: warning
 kind: declarative
 selector:
   type: all

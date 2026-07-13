@@ -7,11 +7,8 @@ from cliff.command import Command
 from nectar_conformance import config as config_mod
 from nectar_conformance.errors import ConformanceError
 from nectar_conformance.report import human, json_report
-from nectar_conformance.results.model import Report, Severity
+from nectar_conformance.results.model import Report
 from nectar_conformance.service import run_check
-
-_RANK = {Severity.INFO: 1, Severity.WARNING: 2, Severity.ERROR: 3}
-_THRESHOLD = {"info": 1, "warning": 2, "error": 3}
 
 # Process exit codes.
 EXIT_OK = 0
@@ -19,15 +16,8 @@ EXIT_NONCONFORMANT = 1
 EXIT_OPERATIONAL = 3
 
 
-def exit_code(report: Report, threshold: str) -> int:
-    worst = report.worst_failing_severity()
-    if worst is None:
-        return EXIT_OK
-    return (
-        EXIT_NONCONFORMANT
-        if _RANK[worst] >= _THRESHOLD[threshold]
-        else EXIT_OK
-    )
+def exit_code(report: Report) -> int:
+    return EXIT_NONCONFORMANT if report.has_failures else EXIT_OK
 
 
 class CheckRun(Command):
@@ -73,12 +63,6 @@ class CheckRun(Command):
             help="human report only: flag passing checks whose pending change is due "
             "within this many days as at risk (default: 30; never affects the exit "
             "code)",
-        )
-        parser.add_argument(
-            "--severity-threshold",
-            choices=["info", "warning", "error"],
-            default="error",
-            help="lowest severity that makes the run exit non-zero (default: error)",
         )
         parser.add_argument("--config", help="path to a config file")
         parser.add_argument(
@@ -144,4 +128,4 @@ class CheckRun(Command):
             human.render(
                 report, self.app.stdout, due_within=parsed_args.due_within
             )
-        return exit_code(report, parsed_args.severity_threshold)
+        return exit_code(report)

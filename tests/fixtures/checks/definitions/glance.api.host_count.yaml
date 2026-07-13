@@ -5,7 +5,6 @@ description: >
   The site must run enough glance API hosts for redundancy (the spec requires at least
   two API servers).
 spec_section: "2.2.2"
-severity: error
 kind: declarative
 selector:
   type: all

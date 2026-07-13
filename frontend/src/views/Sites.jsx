@@ -5,7 +5,6 @@ import {
   CheckLink,
   DUE_SOON_DAYS,
   Score,
-  SeverityBadge,
   fmtDueIn,
   fmtValue,
 } from '../ui.jsx'
@@ -73,7 +72,6 @@ export default function Sites() {
                 <th>Result</th>
                 <th>Score</th>
                 <th>Pass / Fail / Skip</th>
-                <th>Worst</th>
                 <th>Rollouts</th>
                 <th>Version</th>
               </tr>
@@ -101,9 +99,6 @@ export default function Sites() {
                     {s.summary
                       ? `${s.summary.pass} / ${s.summary.fail} / ${s.summary.skip}`
                       : '—'}
-                  </td>
-                  <td>
-                    <SeverityBadge severity={s.worst_severity} />
                   </td>
                   <td>
                     <RolloutCell rollout={s.rollout} />

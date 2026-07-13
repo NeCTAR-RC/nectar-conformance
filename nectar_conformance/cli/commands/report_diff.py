@@ -35,7 +35,7 @@ class ReportDiff(Command):
             out.write(f"{label} ({len(rows)}):\n")
             for r in rows:
                 arrow = f"{r['old']} -> {r['new']}"
-                out.write(f"  {r['rule_id']} [{r['severity']}]  {arrow}\n")
+                out.write(f"  {r['rule_id']}  {arrow}\n")
 
         section("Fixed", diff["fixed"])
         section("Regressed", diff["regressed"])

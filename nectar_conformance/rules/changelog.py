@@ -91,7 +91,6 @@ def _fold_check(visible: list[ChangeEntry], as_of: date) -> dict | None:
     enforced_entry = enforced[-1]
     state = {
         "value": enforced_entry.value,
-        "severity": enforced_entry.severity,
         "effective": enforced_entry.effective,  # winner's date; squash baselines keep it
         "due": enforced_entry.due,
         "pending_value": None,
@@ -118,7 +117,7 @@ def fold(
     tier: str,
     as_of: date,
 ) -> list[Rule]:
-    """Produce the rule set enforced for ``tier`` at ``as_of`` (logic + values + severity)."""
+    """Produce the rule set enforced for ``tier`` at ``as_of`` (logic + values)."""
     rules: list[Rule] = []
     for check_id in sorted(changelog.check_ids):
         visible = _visible(changelog, check_id, tier, as_of)
@@ -132,7 +131,6 @@ def fold(
             Rule(
                 check=check,
                 expected=state["value"],
-                severity=state["severity"] or check.severity,
                 tier=tier,
                 due=state["due"],
                 pending_value=state["pending_value"],
@@ -166,8 +164,8 @@ def _baseline_entries(
     date), so that a carried-forward pending entry with an earlier ``effective`` still wins
     once its ``due`` passes; using the squash date here would let the baseline outrank it and
     silently drop the rollout. Tiers collapse to a single ``tier: all`` entry only when test
-    and prod enforce the same value, severity and effective date; otherwise per-tier entries
-    are emitted. Emits one entry when only one tier is enforced; nothing when neither is (the
+    and prod enforce the same value and effective date; otherwise per-tier entries are
+    emitted. Emits one entry when only one tier is enforced; nothing when neither is (the
     check survives only via carried-forward entries).
     """
 
@@ -178,18 +176,12 @@ def _baseline_entries(
             value=state["value"],
             due=None,
             tier=tier,
-            severity=state["severity"],
             note=note,
         )
 
     if test_state is not None and prod_state is not None:
-        same = (
-            test_state["value"],
-            test_state["severity"],
-            test_state["effective"],
-        ) == (
+        same = (test_state["value"], test_state["effective"]) == (
             prod_state["value"],
-            prod_state["severity"],
             prod_state["effective"],
         )
         if same:

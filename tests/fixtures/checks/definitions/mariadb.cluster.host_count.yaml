@@ -3,7 +3,6 @@ id: mariadb.cluster.host_count
 title: At least the required number of database cluster hosts
 description: The Galera database cluster must run enough nodes to maintain quorum.
 spec_section: "2.2.8"
-severity: error
 kind: declarative
 selector:
   type: all

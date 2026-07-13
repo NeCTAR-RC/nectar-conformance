@@ -5,28 +5,25 @@ from nectar_conformance.results.compare import compare_reports
 
 def _report(statuses):
     return {
-        "results": [
-            {"rule_id": rid, "severity": sev, "status": st}
-            for rid, sev, st in statuses
-        ]
+        "results": [{"rule_id": rid, "status": st} for rid, st in statuses]
     }
 
 
 def test_compare_classifies_changes():
     old = _report(
         [
-            ("glance.api.image_tag", "error", "fail"),
-            ("mariadb.version", "error", "pass"),
-            ("networking.uses_networkd", "warning", "pass"),
-            ("os.mq.ubuntu", "warning", "fail"),
+            ("glance.api.image_tag", "fail"),
+            ("mariadb.version", "pass"),
+            ("networking.uses_networkd", "pass"),
+            ("os.mq.ubuntu", "fail"),
         ]
     )
     new = _report(
         [
-            ("glance.api.image_tag", "error", "pass"),  # fixed
-            ("mariadb.version", "error", "pass"),  # unchanged pass
-            ("networking.uses_networkd", "warning", "fail"),  # regressed
-            ("os.mq.ubuntu", "warning", "fail"),  # still failing
+            ("glance.api.image_tag", "pass"),  # fixed
+            ("mariadb.version", "pass"),  # unchanged pass
+            ("networking.uses_networkd", "fail"),  # regressed
+            ("os.mq.ubuntu", "fail"),  # still failing
         ]
     )
     diff = compare_reports(old, new)
@@ -38,8 +35,8 @@ def test_compare_classifies_changes():
 
 
 def test_compare_added_and_removed():
-    old = _report([("a.b", "error", "pass")])
-    new = _report([("c.d", "error", "fail")])
+    old = _report([("a.b", "pass")])
+    new = _report([("c.d", "fail")])
     diff = compare_reports(old, new)
     assert [r["rule_id"] for r in diff["removed"]] == ["a.b"]
     assert [r["rule_id"] for r in diff["added"]] == ["c.d"]

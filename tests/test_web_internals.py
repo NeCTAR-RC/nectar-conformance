@@ -7,11 +7,7 @@ from pathlib import Path
 
 from nectar_conformance.config import Config
 from nectar_conformance.web import settings as settings_mod
-from nectar_conformance.web.serialise import (
-    rule_to_dict,
-    site_summary,
-    worst_failing_severity,
-)
+from nectar_conformance.web.serialise import rule_to_dict, site_summary
 from nectar_conformance.web.settings import load_settings
 from nectar_conformance.web.store import ReportStore
 
@@ -40,22 +36,19 @@ def test_store_reads_and_caches(tmp_path):
     assert store.status() is store.status()
 
 
-def test_worst_failing_severity_and_summary():
+def test_site_summary():
     report = {
         "summary": {"score": 0.5, "result": "fail"},
         "generated_at": "t",
         "conformance_version": "2026.1",
         "results": [
-            {"status": "fail", "severity": "warning"},
-            {"status": "fail", "severity": "error"},
-            {"status": "pass", "severity": "error"},
+            {"status": "fail"},
+            {"status": "pass"},
         ],
     }
-    assert worst_failing_severity(report) == "error"
-    assert worst_failing_severity({"results": []}) is None
     summ = site_summary("site1", report)
     assert summ["site"] == "site1"
-    assert summ["worst_severity"] == "error"
+    assert summ["summary"]["result"] == "fail"
     assert summ["error"] is None
 
 
@@ -63,7 +56,6 @@ class _Rule:
     id = "x.y"
     title = "X"
     spec_section = None
-    severity = "error"
     expected = "1.0"
     optional = False
     due = None

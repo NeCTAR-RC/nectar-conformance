@@ -13,7 +13,6 @@ from nectar_conformance.results.model import (
     REPORT_SCHEMA_VERSION,
     Report,
     RuleResult,
-    Severity,
     Status,
 )
 from nectar_conformance.results.serialise import report_to_dict, report_to_json
@@ -54,7 +53,6 @@ def _mk_rule(rule_id, status, advisory=None):
         rule_id=rule_id,
         title=rule_id,
         spec_section="s1",
-        severity=Severity.ERROR,
         status=status,
         message="observed 'x'",
         advisory=advisory,
@@ -63,7 +61,6 @@ def _mk_rule(rule_id, status, advisory=None):
         rule_id=rule_id,
         title=rule_id,
         spec_section="s1",
-        severity=Severity.ERROR,
         results=(check,),
     )
 

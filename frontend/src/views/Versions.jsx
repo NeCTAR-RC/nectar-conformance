@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useApi } from '../useApi.js'
-import { Async, CheckLink, SeverityBadge, fmtValue } from '../ui.jsx'
+import { Async, CheckLink, fmtValue } from '../ui.jsx'
 
 // Requirement 2: list all requirements for a version (tag).
 export default function Versions() {
@@ -52,7 +52,6 @@ function Requirements({ tag }) {
         <table className="grid">
           <thead>
             <tr>
-              <th>Severity</th>
               <th>Requirement</th>
               <th>Expected</th>
               <th>Pending</th>
@@ -61,9 +60,6 @@ function Requirements({ tag }) {
           <tbody>
             {data.requirements.map((r) => (
               <tr key={r.id}>
-                <td>
-                  <SeverityBadge severity={r.severity} />
-                </td>
                 <td>
                   <div>
                     <CheckLink id={r.id}>{r.title}</CheckLink>

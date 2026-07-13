@@ -3,7 +3,6 @@ id: nova.conductor.host_count
 title: At least the required number of nova conductor hosts
 description: The nova conductor profile must run on at least the required number of controllers.
 spec_section: "2.2.1"
-severity: error
 kind: declarative
 selector:
   type: all

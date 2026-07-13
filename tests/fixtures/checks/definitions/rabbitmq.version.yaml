@@ -6,7 +6,6 @@ description: >
   via apt (profile::core::rabbitmq::server_pin_version), so all hosts run the same
   RabbitMQ build regardless of what the upstream repository currently offers.
 spec_section: "2.2.9"
-severity: error
 kind: declarative
 selector:
   type: contains_class

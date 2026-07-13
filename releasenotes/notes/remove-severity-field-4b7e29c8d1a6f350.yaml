@@ -1,0 +1,22 @@
+---
+upgrade:
+  - |
+    The ``severity`` field has been removed everywhere: from check definitions,
+    changelog entries, the report JSON, the ``report diff`` output and the web
+    API and dashboard. Every check is now blocking, so ``check run`` exits ``1``
+    on any failure. The two previously warning-level checks
+    (``networking.uses_networkd`` and ``rabbitmq.erlang_version``) now fail a
+    run instead of only being reported.
+  - |
+    The ``check run --severity-threshold`` and ``check list --severity`` options
+    have been removed. Scripts that still pass them will get a usage error
+    (exit ``2``).
+  - |
+    The report JSON schema version is now ``2.0``: rule results no longer carry
+    a ``severity`` key, and the conformance score weights all applicable checks
+    equally instead of by severity.
+  - |
+    The definition and changelog schemas now reject a ``severity`` key. Remove
+    ``severity:`` from the ``nectar-conformance-checks`` repo before deploying
+    this version; the previous release tolerates its absence, so strip the keys
+    there first.

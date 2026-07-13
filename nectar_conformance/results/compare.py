@@ -14,7 +14,7 @@ def _index(report: dict) -> dict:
 def compare_reports(old: dict, new: dict) -> dict:
     """Classify how each check's status changed from ``old`` to ``new``.
 
-    Returns lists of {rule_id, severity, old, new}: ``fixed`` (was failing, now passes),
+    Returns lists of {rule_id, old, new}: ``fixed`` (was failing, now passes),
     ``regressed`` (was passing, now fails), ``still_failing``, plus ``added`` / ``removed``
     checks (e.g. when the conformance version differs between runs).
     """
@@ -27,7 +27,6 @@ def compare_reports(old: dict, new: dict) -> dict:
             added.append(
                 {
                     "rule_id": rule_id,
-                    "severity": new_r["severity"],
                     "old": None,
                     "new": new_r["status"],
                 }
@@ -37,19 +36,13 @@ def compare_reports(old: dict, new: dict) -> dict:
             removed.append(
                 {
                     "rule_id": rule_id,
-                    "severity": old_r["severity"],
                     "old": old_r["status"],
                     "new": None,
                 }
             )
             continue
         os_, ns = old_r["status"], new_r["status"]
-        row = {
-            "rule_id": rule_id,
-            "severity": new_r["severity"],
-            "old": os_,
-            "new": ns,
-        }
+        row = {"rule_id": rule_id, "old": os_, "new": ns}
         if os_ == "fail" and ns == "pass":
             fixed.append(row)
         elif os_ != "fail" and ns == "fail":

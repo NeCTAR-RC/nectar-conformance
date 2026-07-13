@@ -23,9 +23,6 @@ class CheckList(Command):
         )
         parser.add_argument("--config", help="path to a config file")
         parser.add_argument("--checks-dir", help="load checks from this dir")
-        parser.add_argument(
-            "--severity", choices=["info", "warning", "error"], help="filter"
-        )
         return parser
 
     def take_action(self, parsed_args):
@@ -49,17 +46,13 @@ class CheckList(Command):
         out = self.app.stdout
         out.write(f"Checks for conformance {version}:\n")
         for rule in rules:
-            if parsed_args.severity and rule.severity != parsed_args.severity:
-                continue
             expected = (
                 ""
                 if rule.expected is None
                 else f"  expected={rule.expected!r}"
             )
             section = rule.spec_section or "-"
-            out.write(
-                f"  [{rule.severity:7}] {rule.id:30} ({section}){expected}\n"
-            )
+            out.write(f"  {rule.id:30} ({section}){expected}\n")
         return 0
 
 
@@ -91,7 +84,6 @@ class CheckShow(Command):
         out = self.app.stdout
         out.write(f"{check.id}\n")
         out.write(f"  title:        {check.title}\n")
-        out.write(f"  severity:     {check.severity}\n")
         out.write(f"  spec_section: {check.spec_section}\n")
         out.write(f"  kind:         {check.kind}\n")
         out.write(

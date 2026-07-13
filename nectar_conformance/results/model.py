@@ -11,20 +11,12 @@ from dataclasses import dataclass
 import enum
 from typing import Any
 
-REPORT_SCHEMA_VERSION = "1.1"
-# 1.1 adds the optional ``advisory`` block to a check result: a check may PASS today
+REPORT_SCHEMA_VERSION = "2.0"
+# 2.0 removes the ``severity`` key from rule results: every check is blocking and the
+# score weights all applicable checks equally.
+# 1.1 added the optional ``advisory`` block to a check result: a check may PASS today
 # while a dated change is pending, carrying the upcoming value and a "due in N days"
 # countdown. No new Status value; a pending change only FAILs on or after its due date.
-
-# Severity weights used for the conformance score. Documented and versioned alongside
-# REPORT_SCHEMA_VERSION so a dashboard can reproduce the number.
-SEVERITY_WEIGHTS = {"error": 3, "warning": 2, "info": 1}
-
-
-class Severity(str, enum.Enum):
-    ERROR = "error"
-    WARNING = "warning"
-    INFO = "info"
 
 
 class Status(str, enum.Enum):
@@ -83,7 +75,6 @@ class CheckResult:
     rule_id: str
     title: str
     spec_section: str | None
-    severity: Severity
     status: Status
     message: str
     node: str | None = None  # certname, or None for site-level checks
@@ -120,7 +111,6 @@ class RuleResult:
     rule_id: str
     title: str
     spec_section: str | None
-    severity: Severity
     results: tuple[CheckResult, ...]
 
     @property
@@ -168,7 +158,7 @@ class Report:
 
     @property
     def score(self) -> float:
-        """Severity-weighted fraction of applicable checks that pass (0.0 - 1.0).
+        """Fraction of applicable checks that pass (0.0 - 1.0).
 
         SKIP and UNKNOWN rules are excluded from both numerator and denominator.
         """
@@ -176,21 +166,9 @@ class Report:
         for rr in self.rule_results:
             if rr.status not in APPLICABLE:
                 continue
-            weight = SEVERITY_WEIGHTS.get(rr.severity.value, 1)
-            total += weight
+            total += 1
             if rr.status is Status.PASS:
-                earned += weight
+                earned += 1
         if total == 0:
             return 1.0
         return round(earned / total, 4)
-
-    def worst_failing_severity(self) -> Severity | None:
-        """The highest severity among failing rules, or None if nothing failed."""
-        order = [Severity.ERROR, Severity.WARNING, Severity.INFO]
-        failing = {
-            rr.severity for rr in self.rule_results if rr.status is Status.FAIL
-        }
-        for sev in order:
-            if sev in failing:
-                return sev
-        return None

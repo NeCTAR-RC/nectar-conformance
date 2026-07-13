@@ -142,7 +142,7 @@ def test_versions_and_requirements(client):
     assert reqs["version"] == "2026.1"
     assert reqs["requirements"]
     sample = reqs["requirements"][0]
-    assert {"id", "expected", "severity"}.issubset(sample)
+    assert {"id", "expected"}.issubset(sample)
 
     assert client.get("/api/versions/9999.9/requirements").status_code == 404
 

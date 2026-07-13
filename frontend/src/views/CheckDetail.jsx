@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
 import { useApi } from '../useApi.js'
-import { Async, SeverityBadge, StatusBadge, fmtValue } from '../ui.jsx'
+import { Async, StatusBadge, fmtValue } from '../ui.jsx'
 
 // The status of one check at every site (linked to from anywhere a check is shown).
 export default function CheckDetail() {
@@ -13,7 +13,6 @@ export default function CheckDetail() {
         {(data) => (
           <>
             <div className="summary-row">
-              <SeverityBadge severity={data.severity} />
               <span>{data.title}</span>
               {data.spec_section && (
                 <span className="muted small">§{data.spec_section}</span>

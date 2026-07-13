@@ -5,7 +5,6 @@ description: >
   Hosts running the OVN controller (compute and network nodes) must use the approved
   OVN package repository version, set via profile::core::ovn_repo.
 spec_section: "2.2.4"
-severity: error
 kind: declarative
 selector:
   type: contains_class

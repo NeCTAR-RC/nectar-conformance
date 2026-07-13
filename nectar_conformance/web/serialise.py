@@ -7,8 +7,6 @@ and the compact per-site summary shown on the sites list.
 
 from __future__ import annotations
 
-_SEVERITY_ORDER = ("error", "warning", "info")
-
 
 def _remediation_to_dict(rem) -> dict | None:
     if rem is None:
@@ -26,7 +24,6 @@ def rule_to_dict(rule) -> dict:
         "id": rule.id,
         "title": rule.title,
         "spec_section": rule.spec_section,
-        "severity": rule.severity,
         "expected": rule.expected,
         "optional": rule.optional,
         "due": rule.due,
@@ -36,19 +33,6 @@ def rule_to_dict(rule) -> dict:
         "pending_days": rule.pending_days,
         "remediation": _remediation_to_dict(rule.remediation),
     }
-
-
-def worst_failing_severity(report: dict) -> str | None:
-    """Highest severity among a report's failing rules, or None if nothing failed."""
-    failing = {
-        rr.get("severity")
-        for rr in report.get("results", [])
-        if rr.get("status") == "fail"
-    }
-    for severity in _SEVERITY_ORDER:
-        if severity in failing:
-            return severity
-    return None
 
 
 def site_summary(
@@ -69,7 +53,6 @@ def site_summary(
         "summary": report.get("summary"),
         "generated_at": report.get("generated_at"),
         "conformance_version": report.get("conformance_version"),
-        "worst_severity": worst_failing_severity(report),
         "error": error,
         "rollout": rollout,
     }

@@ -50,7 +50,6 @@ def _rule_to_dict(rule_result: RuleResult) -> dict:
         "rule_id": rule_result.rule_id,
         "title": rule_result.title,
         "spec_section": rule_result.spec_section,
-        "severity": rule_result.severity.value,
         "status": rule_result.status.value,
         "checks": [_check_to_dict(c) for c in rule_result.results],
     }

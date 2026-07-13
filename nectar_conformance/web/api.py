@@ -123,7 +123,6 @@ def build_router(settings: WebSettings, store: ReportStore) -> APIRouter:
                         "summary": None,
                         "generated_at": None,
                         "conformance_version": None,
-                        "worst_severity": None,
                         "error": message,
                         "rollout": None,
                     }
@@ -173,20 +172,12 @@ def build_router(settings: WebSettings, store: ReportStore) -> APIRouter:
             )
             if result is None:
                 # The check is not in this site's report (not applicable to its ruleset).
-                sites.append(
-                    {
-                        "site": site,
-                        "status": "absent",
-                        "severity": None,
-                        "checks": [],
-                    }
-                )
+                sites.append({"site": site, "status": "absent", "checks": []})
             else:
                 sites.append(
                     {
                         "site": site,
                         "status": result.get("status"),
-                        "severity": result.get("severity"),
                         "checks": result.get("checks", []),
                     }
                 )
@@ -194,7 +185,6 @@ def build_router(settings: WebSettings, store: ReportStore) -> APIRouter:
             "check_id": check_id,
             "title": definition.title,
             "spec_section": definition.spec_section,
-            "severity": definition.severity,
             "description": definition.description,
             "tier": tier,
             "requirement": rule_to_dict(rule) if rule is not None else None,

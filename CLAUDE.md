@@ -130,6 +130,6 @@ The pipeline is `DataSource -> SiteModel -> engine.evaluate(model, rules) -> Rep
 
 ## Exit codes (CLI)
 
-`0` conformant, `1` failures at/above `--severity-threshold` (default `error`), `2` usage
-error, `3` operational error (PuppetDB unreachable, unknown version, missing repo). The
-threshold affects the exit code only; it never hides checks from the report.
+`0` conformant, `1` any conformance failure, `2` usage error, `3` operational error
+(PuppetDB unreachable, unknown version, missing repo). Every check is blocking; there
+is no severity concept.

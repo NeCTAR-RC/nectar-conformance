@@ -34,11 +34,6 @@ export function StatusBadge({ status }) {
   return <span className={`badge status-${status}`}>{status}</span>
 }
 
-export function SeverityBadge({ severity }) {
-  if (!severity) return null
-  return <span className={`badge sev-${severity}`}>{severity}</span>
-}
-
 export function Score({ value }) {
   if (value == null) return <span className="muted">—</span>
   const pct = Math.round(value * 100)

@@ -25,7 +25,7 @@ class CheckPlugin(abc.ABC):
         """Evaluate the check and return one or more CheckResults.
 
         ``rule`` is the resolved :class:`~nectar_conformance.rules.model.Rule` (for
-        id, title, spec_section, severity); ``params`` is ``plugin.params`` from the
+        id, title, spec_section); ``params`` is ``plugin.params`` from the
         definition.
         """
         raise NotImplementedError

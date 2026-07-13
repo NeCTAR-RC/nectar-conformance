@@ -66,7 +66,7 @@ def test_check_run_json_reports_failure_and_exit_1(capsys):
     data = json.loads(out)
     assert data["site"] == "ardctest"
     assert data["summary"]["result"] == "fail"
-    assert code == 1  # error-severity failure at default threshold
+    assert code == 1  # any failure exits non-zero
 
 
 def test_check_run_unknown_version_is_operational_error(capsys):
@@ -267,7 +267,7 @@ def test_version_diff_reports_value_change(tmp_path, capsys):
     assert "27.5.1 -> 29.4.0" in out
 
 
-def test_check_list_and_severity_filter(capsys):
+def test_check_list(capsys):
     code = main(
         [
             "check",
@@ -281,22 +281,6 @@ def test_check_list_and_severity_filter(capsys):
     out = capsys.readouterr().out
     assert code == 0
     assert "Checks for conformance 2026.1:" in out
-    # The --severity branch filters the listing.
-    assert (
-        main(
-            [
-                "check",
-                "list",
-                "--conformance-version",
-                "2026.1",
-                "--checks-dir",
-                _CHECKS,
-                "--severity",
-                "error",
-            ]
-        )
-        == 0
-    )
 
 
 def test_check_list_requires_a_version(capsys):
@@ -335,18 +319,18 @@ def test_check_show_unknown_is_operational_error(capsys):
 
 _OLD_REPORT = {
     "results": [
-        {"rule_id": "a.fix", "status": "fail", "severity": "error"},
-        {"rule_id": "a.reg", "status": "pass", "severity": "warning"},
-        {"rule_id": "a.same", "status": "fail", "severity": "error"},
-        {"rule_id": "a.removed", "status": "fail", "severity": "info"},
+        {"rule_id": "a.fix", "status": "fail"},
+        {"rule_id": "a.reg", "status": "pass"},
+        {"rule_id": "a.same", "status": "fail"},
+        {"rule_id": "a.removed", "status": "fail"},
     ]
 }
 _NEW_REPORT = {
     "results": [
-        {"rule_id": "a.fix", "status": "pass", "severity": "error"},
-        {"rule_id": "a.reg", "status": "fail", "severity": "warning"},
-        {"rule_id": "a.same", "status": "fail", "severity": "error"},
-        {"rule_id": "a.added", "status": "pass", "severity": "info"},
+        {"rule_id": "a.fix", "status": "pass"},
+        {"rule_id": "a.reg", "status": "fail"},
+        {"rule_id": "a.same", "status": "fail"},
+        {"rule_id": "a.added", "status": "pass"},
     ]
 }
 

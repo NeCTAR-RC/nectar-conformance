@@ -21,7 +21,6 @@ from nectar_conformance.results.model import (
     Remediation,
     Report,
     RuleResult,
-    Severity,
     Status,
 )
 from nectar_conformance.rules.model import PLUGIN, Rule
@@ -99,7 +98,6 @@ def _rule_result(rule: Rule, results: list[CheckResult]) -> RuleResult:
         rule_id=rule.id,
         title=rule.title,
         spec_section=rule.spec_section,
-        severity=Severity(rule.severity),
         results=tuple(results),
     )
 
@@ -109,7 +107,6 @@ def _skip(rule: Rule, message: str) -> CheckResult:
         rule_id=rule.id,
         title=rule.title,
         spec_section=rule.spec_section,
-        severity=Severity(rule.severity),
         status=Status.SKIP,
         message=message,
     )
@@ -137,7 +134,6 @@ def _result(
         rule_id=rule.id,
         title=rule.title,
         spec_section=rule.spec_section,
-        severity=Severity(rule.severity),
         status=status,
         message=message,
         node=node,

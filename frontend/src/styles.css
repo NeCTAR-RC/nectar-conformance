@@ -251,19 +251,14 @@ a {
   color: var(--warn);
 }
 
-.sev-error {
+.badge-enforced {
   background: var(--bad-bg);
   color: var(--bad);
 }
 
-.sev-warning {
+.badge-pending {
   background: var(--warn-bg);
   color: var(--warn);
-}
-
-.sev-info {
-  background: var(--info-bg);
-  color: var(--accent);
 }
 
 .score {

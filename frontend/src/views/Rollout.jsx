@@ -32,7 +32,9 @@ function ChangeCard({ change }) {
         <strong>
           <CheckLink id={change.check_id} />
         </strong>
-        <span className={`badge ${change.due_passed ? 'sev-error' : 'sev-warning'}`}>
+        <span
+          className={`badge ${change.due_passed ? 'badge-enforced' : 'badge-pending'}`}
+        >
           {change.due_passed ? 'enforced' : 'pending'}
         </span>
         <span className="muted">

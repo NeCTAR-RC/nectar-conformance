@@ -3,7 +3,6 @@ id: nova.novnc.host_count
 title: At least the required number of nova novnc proxy hosts
 description: The nova novnc proxy profile must run on at least the required number of controllers.
 spec_section: "2.2.1"
-severity: error
 kind: declarative
 selector:
   type: all

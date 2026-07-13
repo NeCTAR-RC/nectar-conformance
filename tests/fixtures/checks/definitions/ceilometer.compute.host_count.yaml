@@ -3,7 +3,6 @@ id: ceilometer.compute.host_count
 title: At least the required number of ceilometer compute agent hosts
 description: The ceilometer compute agent profile must run on at least the required number of hosts.
 spec_section: "2.2.6"
-severity: error
 kind: declarative
 selector:
   type: all

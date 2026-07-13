@@ -5,7 +5,6 @@ description: >
   The glance-api container must run the Core Services approved kolla image tag so all
   sites run the same Glance build.
 spec_section: "2.2.2"
-severity: error
 kind: declarative
 selector:
   type: contains_class

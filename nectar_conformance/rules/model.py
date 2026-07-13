@@ -7,12 +7,12 @@ Two layers:
 
 * :class:`CheckDef` is the value-free LOGIC of a check (authored once).
 * :class:`Changelog` is an append-only list of dated, tier-scoped :class:`ChangeEntry`
-  directives that bind EXPECTED VALUES over time (and may override severity). A
-  conformance "version" is a named ``tag`` (a pinned date) over the same log.
+  directives that bind EXPECTED VALUES over time. A conformance "version" is a named
+  ``tag`` (a pinned date) over the same log.
 
 :func:`~nectar_conformance.rules.changelog.fold` combines them for one site at one
-instant into a :class:`Rule` (logic + enforced value + any pending value + effective
-severity) which the engine evaluates.
+instant into a :class:`Rule` (logic + enforced value + any pending value) which the
+engine evaluates.
 """
 
 from __future__ import annotations
@@ -48,7 +48,6 @@ class CheckDef:
     id: str
     title: str
     spec_section: str | None
-    severity: str  # default severity; a manifest may override it
     kind: str  # declarative | plugin
     selector: Selector
     query: Query | None  # None for plugin checks
@@ -94,7 +93,6 @@ class CheckDef:
             id=data["id"],
             title=data["title"],
             spec_section=data.get("spec_section"),
-            severity=data.get("severity", "error"),
             kind=data.get("kind", DECLARATIVE),
             selector=selector,
             query=query,
@@ -122,7 +120,6 @@ class ChangeEntry:
     value: Any = None  # bound expected value (None for present/absent checks)
     due: str | None = None  # ISO date; None means mandatory from ``effective``
     tier: str = "all"  # all | test | prod
-    severity: str | None = None  # overrides the definition default when set
     note: str | None = None
 
     @classmethod
@@ -133,7 +130,6 @@ class ChangeEntry:
             value=data.get("value"),
             due=data.get("due"),
             tier=data.get("tier", "all"),
-            severity=data.get("severity"),
             note=data.get("note"),
         )
 
@@ -170,7 +166,6 @@ class Rule:
 
     check: CheckDef
     expected: Any  # enforced value (None for present/absent/plugin)
-    severity: str  # effective severity (changelog override or the definition default)
     tier: str = "all"  # the site tier this rule was folded for
     due: str | None = None  # the enforced entry's due date, if any
     pending_value: Any = (

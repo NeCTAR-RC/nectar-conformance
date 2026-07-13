@@ -343,7 +343,7 @@ def test_all_of_check_is_per_node_pass_fail_without_unknowns():
             "assertion": {"op": "in_set"},
         }
     )
-    rule = Rule(check=check, expected=["N", "0"], severity="error")
+    rule = Rule(check=check, expected=["N", "0"])
     model = _site(
         make_node(
             "cc1.example.test",

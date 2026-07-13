@@ -3,7 +3,6 @@ id: cinder.host_count
 title: At least the required number of cinder volume hosts
 description: The cinder volume profile must run on at least the required number of hosts.
 spec_section: "2.2.3"
-severity: error
 kind: declarative
 selector:
   type: all

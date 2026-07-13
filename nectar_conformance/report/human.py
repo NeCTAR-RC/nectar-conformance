@@ -107,12 +107,7 @@ def render(report: Report, stream: TextIO, *, due_within: int = 30) -> None:
         console.print(f"\n[bold]{section}[/bold]")
         for rr in sections[section]:
             label, _ = _GLYPH[rr.status]
-            sev = (
-                f" [{rr.severity.value}]"
-                if rr.status in (Status.FAIL, Status.UNKNOWN)
-                else ""
-            )
-            console.print(f"  {label}  {rr.rule_id}{sev}  {_detail(rr)}")
+            console.print(f"  {label}  {rr.rule_id}  {_detail(rr)}")
             hosts = _affected(rr)
             if hosts:
                 console.print(f"        hosts: {', '.join(hosts)}")
