@@ -68,6 +68,20 @@ describe('groupBySection', () => {
     ]
     expect(groupBySection(rows).map(([s]) => s)).toEqual(['2.4', 'general'])
   })
+  it('pins "All Nodes" first and "general" last among named sections', () => {
+    const rows = [
+      { id: 'a', spec_section: 'Compute Node' },
+      { id: 'b' },
+      { id: 'c', spec_section: 'All Nodes' },
+      { id: 'd', spec_section: 'Admin Proxy' },
+    ]
+    expect(groupBySection(rows).map(([s]) => s)).toEqual([
+      'All Nodes',
+      'Admin Proxy',
+      'Compute Node',
+      'general',
+    ])
+  })
 })
 
 describe('fmtDueIn', () => {

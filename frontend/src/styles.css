@@ -285,11 +285,13 @@ a {
   flex-wrap: wrap;
 }
 
-/* Spec-section header rows inside the results/requirements tables. */
-.section-row td {
-  background: var(--th-bg);
-  font-weight: 700;
-  font-size: 13px;
+/* One visually separate block per spec section (heading + its own table). */
+.section-group {
+  margin-bottom: 28px;
+}
+
+.section-group h3 {
+  margin: 0 0 8px;
 }
 
 .rule-fail td {

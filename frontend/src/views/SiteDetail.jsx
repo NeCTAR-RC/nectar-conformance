@@ -38,25 +38,25 @@ export default function SiteDetail() {
                 {report.conformance_version} · {report.generated_at}
               </span>
             </div>
-            <table className="grid">
-              <thead>
-                <tr>
-                  <th>Status</th>
-                  <th>Check</th>
-                  <th>Detail</th>
-                </tr>
-              </thead>
-              {groupBySection(report.results).map(([section, rules]) => (
-                <tbody key={section}>
-                  <tr className="section-row">
-                    <td colSpan={3}>{section}</td>
-                  </tr>
-                  {rules.map((rule) => (
-                    <RuleRow key={rule.rule_id} rule={rule} />
-                  ))}
-                </tbody>
-              ))}
-            </table>
+            {groupBySection(report.results).map(([section, rules]) => (
+              <div key={section} className="section-group">
+                <h3>{section}</h3>
+                <table className="grid">
+                  <thead>
+                    <tr>
+                      <th>Status</th>
+                      <th>Check</th>
+                      <th>Detail</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rules.map((rule) => (
+                      <RuleRow key={rule.rule_id} rule={rule} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
           </>
         )}
       </Async>

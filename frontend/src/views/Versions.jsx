@@ -49,42 +49,44 @@ function Requirements({ tag }) {
   return (
     <Async state={state} empty={(d) => d.requirements.length === 0}>
       {(data) => (
-        <table className="grid">
-          <thead>
-            <tr>
-              <th>Requirement</th>
-              <th>Expected</th>
-              <th>Pending</th>
-            </tr>
-          </thead>
+        <>
           {groupBySection(data.requirements).map(([section, rules]) => (
-            <tbody key={section}>
-              <tr className="section-row">
-                <td colSpan={3}>{section}</td>
-              </tr>
-              {rules.map((r) => (
-                <tr key={r.id}>
-                  <td>
-                    <div>
-                      <CheckLink id={r.id}>{r.title}</CheckLink>
-                    </div>
-                    <div className="muted small">{r.id}</div>
-                  </td>
-                  <td>{fmtValue(r.expected)}</td>
-                  <td>
-                    {r.has_pending ? (
-                      <span className="advisory small">
-                        {fmtValue(r.pending_value)} (due {r.pending_due})
-                      </span>
-                    ) : (
-                      <span className="muted">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+            <div key={section} className="section-group">
+              <h3>{section}</h3>
+              <table className="grid">
+                <thead>
+                  <tr>
+                    <th>Requirement</th>
+                    <th>Expected</th>
+                    <th>Pending</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rules.map((r) => (
+                    <tr key={r.id}>
+                      <td>
+                        <div>
+                          <CheckLink id={r.id}>{r.title}</CheckLink>
+                        </div>
+                        <div className="muted small">{r.id}</div>
+                      </td>
+                      <td>{fmtValue(r.expected)}</td>
+                      <td>
+                        {r.has_pending ? (
+                          <span className="advisory small">
+                            {fmtValue(r.pending_value)} (due {r.pending_due})
+                          </span>
+                        ) : (
+                          <span className="muted">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ))}
-        </table>
+        </>
       )}
     </Async>
   )

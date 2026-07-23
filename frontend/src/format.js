@@ -36,10 +36,10 @@ export function daysUntil(iso, now = new Date()) {
   return Math.round((due - today) / 86400000)
 }
 
-// Group rows by their spec_section into [section, rows[]] entries, sorted by
-// section number (numeric per dotted segment, so "2.10" follows "2.9"). Rows
-// without a section land in "general", which sorts last — mirrors the CLI
-// human report's grouping.
+// Group rows by their spec_section into [section, rows[]] entries. "All Nodes"
+// applies to every machine so it leads; rows without a section land in
+// "general", which trails; the rest sort by name (numeric per dotted segment,
+// so a "2.10" follows a "2.9").
 export function groupBySection(rows) {
   const groups = new Map()
   for (const row of rows) {
@@ -50,7 +50,16 @@ export function groupBySection(rows) {
   return [...groups.entries()].sort(([a], [b]) => compareSections(a, b))
 }
 
+function sectionRank(section) {
+  const s = section.toLowerCase()
+  if (s === 'all nodes') return 0
+  if (s === 'general') return 2
+  return 1
+}
+
 function compareSections(a, b) {
+  const rank = sectionRank(a) - sectionRank(b)
+  if (rank !== 0) return rank
   const as = a.split('.')
   const bs = b.split('.')
   for (let i = 0; i < Math.max(as.length, bs.length); i++) {
@@ -58,12 +67,8 @@ function compareSections(a, b) {
     if (bs[i] === undefined) return 1
     const an = Number(as[i])
     const bn = Number(bs[i])
-    const aNum = !Number.isNaN(an)
-    const bNum = !Number.isNaN(bn)
-    if (aNum && bNum) {
+    if (!Number.isNaN(an) && !Number.isNaN(bn)) {
       if (an !== bn) return an - bn
-    } else if (aNum !== bNum) {
-      return aNum ? -1 : 1 // numbered sections before "general"
     } else if (as[i] !== bs[i]) {
       return as[i] < bs[i] ? -1 : 1
     }
