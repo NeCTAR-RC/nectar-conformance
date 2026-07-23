@@ -36,6 +36,41 @@ export function daysUntil(iso, now = new Date()) {
   return Math.round((due - today) / 86400000)
 }
 
+// Group rows by their spec_section into [section, rows[]] entries, sorted by
+// section number (numeric per dotted segment, so "2.10" follows "2.9"). Rows
+// without a section land in "general", which sorts last — mirrors the CLI
+// human report's grouping.
+export function groupBySection(rows) {
+  const groups = new Map()
+  for (const row of rows) {
+    const section = row.spec_section || 'general'
+    if (!groups.has(section)) groups.set(section, [])
+    groups.get(section).push(row)
+  }
+  return [...groups.entries()].sort(([a], [b]) => compareSections(a, b))
+}
+
+function compareSections(a, b) {
+  const as = a.split('.')
+  const bs = b.split('.')
+  for (let i = 0; i < Math.max(as.length, bs.length); i++) {
+    if (as[i] === undefined) return -1
+    if (bs[i] === undefined) return 1
+    const an = Number(as[i])
+    const bn = Number(bs[i])
+    const aNum = !Number.isNaN(an)
+    const bNum = !Number.isNaN(bn)
+    if (aNum && bNum) {
+      if (an !== bn) return an - bn
+    } else if (aNum !== bNum) {
+      return aNum ? -1 : 1 // numbered sections before "general"
+    } else if (as[i] !== bs[i]) {
+      return as[i] < bs[i] ? -1 : 1
+    }
+  }
+  return 0
+}
+
 // A human phrase for a day countdown (negative = past due, null = date unknown).
 export function fmtDueIn(days) {
   if (days == null) return 'soon'

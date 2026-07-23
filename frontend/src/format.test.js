@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { daysUntil, fmtAge, fmtDueIn, fmtValue } from './format.js'
+import {
+  daysUntil,
+  fmtAge,
+  fmtDueIn,
+  fmtValue,
+  groupBySection,
+} from './format.js'
 
 describe('fmtValue', () => {
   it('renders a dash for null/undefined', () => {
@@ -37,6 +43,30 @@ describe('daysUntil', () => {
   it('returns null for missing or unparsable dates', () => {
     expect(daysUntil(null, now)).toBeNull()
     expect(daysUntil('not-a-date', now)).toBeNull()
+  })
+})
+
+describe('groupBySection', () => {
+  it('groups rows by spec_section in numeric section order', () => {
+    const rows = [
+      { id: 'c', spec_section: '2.2.1' },
+      { id: 'a', spec_section: '2.1' },
+      { id: 'd', spec_section: '2.10' },
+      { id: 'b', spec_section: '2.1' },
+      { id: 'e', spec_section: '2.2.1' },
+    ]
+    expect(groupBySection(rows)).toEqual([
+      ['2.1', [rows[1], rows[3]]],
+      ['2.2.1', [rows[0], rows[4]]],
+      ['2.10', [rows[2]]],
+    ])
+  })
+  it('puts rows without a section under "general", last', () => {
+    const rows = [
+      { id: 'a', spec_section: null },
+      { id: 'b', spec_section: '2.4' },
+    ]
+    expect(groupBySection(rows).map(([s]) => s)).toEqual(['2.4', 'general'])
   })
 })
 

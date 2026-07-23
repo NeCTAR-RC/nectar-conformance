@@ -9,6 +9,7 @@ import {
   daysUntil,
   fmtDueIn,
   fmtValue,
+  groupBySection,
 } from '../ui.jsx'
 
 // Requirement 1 (detail): the full conformance result for one site.
@@ -45,11 +46,16 @@ export default function SiteDetail() {
                   <th>Detail</th>
                 </tr>
               </thead>
-              <tbody>
-                {report.results.map((rule) => (
-                  <RuleRow key={rule.rule_id} rule={rule} />
-                ))}
-              </tbody>
+              {groupBySection(report.results).map(([section, rules]) => (
+                <tbody key={section}>
+                  <tr className="section-row">
+                    <td colSpan={3}>{section}</td>
+                  </tr>
+                  {rules.map((rule) => (
+                    <RuleRow key={rule.rule_id} rule={rule} />
+                  ))}
+                </tbody>
+              ))}
             </table>
           </>
         )}

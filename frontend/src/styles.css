@@ -285,6 +285,13 @@ a {
   flex-wrap: wrap;
 }
 
+/* Spec-section header rows inside the results/requirements tables. */
+.section-row td {
+  background: var(--th-bg);
+  font-weight: 700;
+  font-size: 13px;
+}
+
 .rule-fail td {
   background: var(--fail-row-bg);
 }

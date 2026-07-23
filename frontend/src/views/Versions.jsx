@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useApi } from '../useApi.js'
-import { Async, CheckLink, fmtValue } from '../ui.jsx'
+import { Async, CheckLink, fmtValue, groupBySection } from '../ui.jsx'
 
 // Requirement 2: list all requirements for a version (tag).
 export default function Versions() {
@@ -57,28 +57,33 @@ function Requirements({ tag }) {
               <th>Pending</th>
             </tr>
           </thead>
-          <tbody>
-            {data.requirements.map((r) => (
-              <tr key={r.id}>
-                <td>
-                  <div>
-                    <CheckLink id={r.id}>{r.title}</CheckLink>
-                  </div>
-                  <div className="muted small">{r.id}</div>
-                </td>
-                <td>{fmtValue(r.expected)}</td>
-                <td>
-                  {r.has_pending ? (
-                    <span className="advisory small">
-                      {fmtValue(r.pending_value)} (due {r.pending_due})
-                    </span>
-                  ) : (
-                    <span className="muted">—</span>
-                  )}
-                </td>
+          {groupBySection(data.requirements).map(([section, rules]) => (
+            <tbody key={section}>
+              <tr className="section-row">
+                <td colSpan={3}>{section}</td>
               </tr>
-            ))}
-          </tbody>
+              {rules.map((r) => (
+                <tr key={r.id}>
+                  <td>
+                    <div>
+                      <CheckLink id={r.id}>{r.title}</CheckLink>
+                    </div>
+                    <div className="muted small">{r.id}</div>
+                  </td>
+                  <td>{fmtValue(r.expected)}</td>
+                  <td>
+                    {r.has_pending ? (
+                      <span className="advisory small">
+                        {fmtValue(r.pending_value)} (due {r.pending_due})
+                      </span>
+                    ) : (
+                      <span className="muted">—</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          ))}
         </table>
       )}
     </Async>

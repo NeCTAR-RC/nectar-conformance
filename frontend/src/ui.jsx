@@ -7,6 +7,7 @@ export {
   fmtAge,
   fmtDueIn,
   fmtValue,
+  groupBySection,
 } from './format.js'
 
 // A link to the per-check detail page (status of this check at every site).
