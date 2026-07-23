@@ -76,6 +76,26 @@ function compareSections(a, b) {
   return 0
 }
 
+// Roll a section's rule statuses up to one status, mirroring the backend's
+// precedence (results/model.py): any fail wins, else unknown, else pass; a
+// section where nothing applied stays "skip".
+const STATUS_PRECEDENCE = ['fail', 'unknown', 'pass', 'skip']
+
+export function sectionStatus(rows) {
+  const present = new Set(rows.map((r) => r.status))
+  return STATUS_PRECEDENCE.find((s) => present.has(s)) ?? 'skip'
+}
+
+// Compact status tally for a tooltip, e.g. "2 fail · 5 pass" (zeros omitted).
+export function fmtStatusCounts(rows) {
+  return STATUS_PRECEDENCE.map(
+    (s) => [s, rows.filter((r) => r.status === s).length],
+  )
+    .filter(([, n]) => n > 0)
+    .map(([s, n]) => `${n} ${s}`)
+    .join(' · ')
+}
+
 // A human phrase for a day countdown (negative = past due, null = date unknown).
 export function fmtDueIn(days) {
   if (days == null) return 'soon'

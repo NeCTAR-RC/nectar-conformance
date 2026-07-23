@@ -343,6 +343,23 @@ a {
   background: var(--muted);
 }
 
+/* Rolled-up section status on the site detail headings. */
+.dot-pass {
+  background: var(--good);
+}
+
+.dot-fail {
+  background: var(--bad);
+}
+
+.dot-unknown {
+  background: var(--warn);
+}
+
+.dot-skip {
+  background: var(--muted);
+}
+
 .cols {
   display: flex;
   gap: 20px;

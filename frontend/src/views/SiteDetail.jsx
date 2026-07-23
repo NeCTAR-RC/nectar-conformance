@@ -8,8 +8,10 @@ import {
   StatusBadge,
   daysUntil,
   fmtDueIn,
+  fmtStatusCounts,
   fmtValue,
   groupBySection,
+  sectionStatus,
 } from '../ui.jsx'
 
 // Requirement 1 (detail): the full conformance result for one site.
@@ -40,7 +42,13 @@ export default function SiteDetail() {
             </div>
             {groupBySection(report.results).map(([section, rules]) => (
               <div key={section} className="section-group">
-                <h3>{section}</h3>
+                <h3>
+                  <span
+                    className={`dot dot-${sectionStatus(rules)}`}
+                    title={fmtStatusCounts(rules)}
+                  />
+                  {section}
+                </h3>
                 <table className="grid">
                   <thead>
                     <tr>

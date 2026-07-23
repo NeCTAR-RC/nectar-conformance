@@ -6,8 +6,10 @@ export {
   daysUntil,
   fmtAge,
   fmtDueIn,
+  fmtStatusCounts,
   fmtValue,
   groupBySection,
+  sectionStatus,
 } from './format.js'
 
 // A link to the per-check detail page (status of this check at every site).

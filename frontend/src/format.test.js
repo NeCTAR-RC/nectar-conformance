@@ -3,8 +3,10 @@ import {
   daysUntil,
   fmtAge,
   fmtDueIn,
+  fmtStatusCounts,
   fmtValue,
   groupBySection,
+  sectionStatus,
 } from './format.js'
 
 describe('fmtValue', () => {
@@ -81,6 +83,33 @@ describe('groupBySection', () => {
       'Compute Node',
       'general',
     ])
+  })
+})
+
+describe('sectionStatus', () => {
+  const rows = (...statuses) => statuses.map((status) => ({ status }))
+  it('rolls up with fail > unknown > pass > skip precedence', () => {
+    expect(sectionStatus(rows('pass', 'fail', 'unknown'))).toBe('fail')
+    expect(sectionStatus(rows('pass', 'unknown', 'skip'))).toBe('unknown')
+    expect(sectionStatus(rows('pass', 'skip'))).toBe('pass')
+    expect(sectionStatus(rows('skip', 'skip'))).toBe('skip')
+  })
+  it('treats an empty section as skip', () => {
+    expect(sectionStatus([])).toBe('skip')
+  })
+})
+
+describe('fmtStatusCounts', () => {
+  it('tallies statuses in precedence order, omitting zeros', () => {
+    const rows = [
+      { status: 'pass' },
+      { status: 'fail' },
+      { status: 'pass' },
+      { status: 'skip' },
+    ]
+    expect(fmtStatusCounts(rows)).toBe('1 fail · 2 pass · 1 skip')
+    expect(fmtStatusCounts([{ status: 'pass' }])).toBe('1 pass')
+    expect(fmtStatusCounts([])).toBe('')
   })
 })
 
