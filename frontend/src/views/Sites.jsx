@@ -73,7 +73,6 @@ export default function Sites() {
                 <th>Score</th>
                 <th>Pass / Fail / Skip</th>
                 <th>Rollouts</th>
-                <th>Version</th>
               </tr>
             </thead>
             <tbody>
@@ -103,7 +102,6 @@ export default function Sites() {
                   <td>
                     <RolloutCell rollout={s.rollout} />
                   </td>
-                  <td className="muted">{s.conformance_version || '—'}</td>
                 </tr>
               ))}
             </tbody>
