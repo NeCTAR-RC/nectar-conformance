@@ -1,0 +1,9 @@
+---
+fixes:
+  - |
+    The rollout view no longer flags a site as overdue on a dated change that
+    a newer changelog entry has superseded. Only live changes are tracked:
+    the currently enforced entry plus anything announced but not yet due. A
+    site already running a newer announced value for the same check now
+    counts as having adopted the older change, matching how the engine
+    accepts a pending value early.

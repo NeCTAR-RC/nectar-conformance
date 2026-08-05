@@ -36,13 +36,17 @@ entries:
 """
 
 
-@pytest.fixture
-def controlled_config(tmp_path) -> Config:
+def _config_with_changelog(tmp_path, changelog_text: str) -> Config:
     mirror = Path(__file__).parent / "fixtures" / "checks"
     checks_dir = tmp_path / "checks"
     shutil.copytree(mirror, checks_dir)
-    (checks_dir / "changelog.yaml").write_text(CONTROLLED_CHANGELOG)
+    (checks_dir / "changelog.yaml").write_text(changelog_text)
     return Config(checks_dir=str(checks_dir))
+
+
+@pytest.fixture
+def controlled_config(tmp_path) -> Config:
+    return _config_with_changelog(tmp_path, CONTROLLED_CHANGELOG)
 
 
 def _no_puppetdb(monkeypatch):
@@ -111,11 +115,59 @@ def test_list_changes_carries_op_and_target(controlled_config):
     assert change["target"] == "2.0"
     assert change["due"] == "2026-12-01"
     assert change["tier"] == "prod"
+    assert change["newer_targets"] == []
 
 
 def test_list_changes_excludes_other_tier(controlled_config):
     # The dated change is tier prod; a test-tier view should not see it.
     assert list_changes(controlled_config, tier="test", as_of=AS_OF) == []
+
+
+def test_list_changes_drops_superseded_entries(tmp_path):
+    # Two dated upgrades are past due; only the newest is what the fold enforces, so
+    # only it is a live rollout. The older one would flag sites that already moved on
+    # to 3.0 as overdue on 2.0.
+    config = _config_with_changelog(
+        tmp_path,
+        "entries:\n"
+        '  - {check_id: rabbitmq.version, value: "1.0", effective: "2026-01-01"}\n'
+        '  - {check_id: rabbitmq.version, value: "2.0", '
+        'effective: "2026-03-01", due: "2026-04-01"}\n'
+        '  - {check_id: rabbitmq.version, value: "3.0", '
+        'effective: "2026-05-01", due: "2026-06-01", tier: test}\n',
+    )
+    test_changes = list_changes(config, tier="test", as_of=AS_OF)
+    assert [(c["target"], c["newer_targets"]) for c in test_changes] == [
+        ("3.0", [])
+    ]
+    # The test-only 3.0 upgrade is invisible to prod, so there 2.0 is still the
+    # enforced winner and stays live.
+    prod_changes = list_changes(config, tier="prod", as_of=AS_OF)
+    assert [(c["target"], c["newer_targets"]) for c in prod_changes] == [
+        ("2.0", [])
+    ]
+
+
+def test_list_changes_enforced_winner_carries_pending_as_newer_target(
+    tmp_path,
+):
+    # An enforced rollout with a newer pending change stays live (sites may still be
+    # behind it), but a site already on the pending value has moved past it: the
+    # pending value rides along so the rollout join can count that site as adopted.
+    config = _config_with_changelog(
+        tmp_path,
+        "entries:\n"
+        '  - {check_id: rabbitmq.version, value: "1.0", effective: "2026-01-01"}\n'
+        '  - {check_id: rabbitmq.version, value: "2.0", '
+        'effective: "2026-03-01", due: "2026-04-01"}\n'
+        '  - {check_id: rabbitmq.version, value: "3.0", '
+        'effective: "2026-06-01", due: "2026-12-01"}\n',
+    )
+    changes = list_changes(config, tier="prod", as_of=AS_OF)
+    assert [(c["target"], c["newer_targets"]) for c in changes] == [
+        ("2.0", ["3.0"]),
+        ("3.0", []),
+    ]
 
 
 def test_pending_changes_surfaces_upcoming_value(controlled_config):

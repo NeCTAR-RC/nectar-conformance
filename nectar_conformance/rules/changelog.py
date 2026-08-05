@@ -142,6 +142,35 @@ def fold(
     return rules
 
 
+def live_dated_entries(
+    changelog: Changelog, *, tier: str, as_of: date
+) -> list[tuple[ChangeEntry, list]]:
+    """Dated entries still live for ``tier`` at ``as_of``, with any newer accepted values.
+
+    Live = the fold's enforced winner (when it is a dated entry) plus every pending
+    entry. An enforced dated entry that a later entry supersedes is history: the fold no
+    longer enforces its value, so judging site adoption against it would flag sites that
+    already moved on as overdue. Each live entry is paired with the values of the
+    strictly newer visible entries for the same check — a site observing one of those
+    has moved past the change and counts as having adopted it, mirroring the engine
+    accepting a pending value early.
+    """
+    out: list[tuple[ChangeEntry, list]] = []
+    for check_id in sorted(changelog.check_ids):
+        visible = _visible(changelog, check_id, tier, as_of)
+        enforced = [
+            e for e in visible if e.due is None or _parse_date(e.due) <= as_of
+        ]
+        winner = enforced[-1] if enforced else None
+        for i, e in enumerate(visible):
+            if e.due is None:
+                continue  # baselines are not rollouts
+            if _parse_date(e.due) <= as_of and e is not winner:
+                continue  # enforced but superseded
+            out.append((e, [n.value for n in visible[i + 1 :]]))
+    return out
+
+
 def resolved_check_ids_at(changelog: Changelog, tier: str, as_of: date) -> set:
     """The set of check ids that are enforced for ``tier`` at ``as_of``."""
     out = set()
