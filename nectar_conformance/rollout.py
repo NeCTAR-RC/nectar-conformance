@@ -31,13 +31,34 @@ def _rule_result(report: dict, check_id: str) -> dict | None:
     return None
 
 
-def _site_meets(rule_result: dict, op: str, target) -> bool | None:
-    """Whether a site already satisfies ``target`` for this check, or None if N/A.
+def _node_meets(observed, op: str, targets: list) -> bool | None:
+    """Whether one observation satisfies ``op`` against any target; None if unevaluable.
 
-    N/A when the check did not apply (skipped/unknown, or the operator could not be
-    evaluated). Otherwise every applicable per-node (or single site-level) observation must
-    satisfy the operator against the target. Comparing observed-vs-target directly, rather
-    than trusting the report's pass/fail, is correct in both regimes: while a change is
+    An operator that cannot judge these values (bad version string, etc.) is treated as
+    not-determinable rather than crashing the dashboard.
+    """
+    evaluable = False
+    for target in targets:
+        try:
+            result = _apply_op(op, observed, target)
+        except Exception:
+            continue
+        evaluable = True
+        if result:
+            return True
+    return False if evaluable else None
+
+
+def _site_meets(rule_result: dict, op: str, targets: list) -> bool | None:
+    """Whether a site already satisfies this change, or None if N/A.
+
+    ``targets`` is the change's own value first, then any newer announced values for the
+    same check: a site observing a newer value has moved past the change and counts as
+    adopted, just as the engine accepts a pending value early. N/A when the check did
+    not apply (skipped/unknown, or the operator could not be evaluated). Otherwise every
+    applicable per-node (or single site-level) observation must satisfy the operator
+    against one of the targets. Comparing observed-vs-target directly, rather than
+    trusting the report's pass/fail, is correct in both regimes: while a change is
     pending the engine accepts the old value too, so its pass/fail cannot tell adopters apart.
     """
     if rule_result.get("status") in ("skip", "unknown"):
@@ -49,14 +70,12 @@ def _site_meets(rule_result: dict, op: str, target) -> bool | None:
     ]
     if not applicable:
         return None
-    try:
-        return all(
-            _apply_op(op, c.get("observed"), target) for c in applicable
-        )
-    except Exception:
-        # An operator that cannot judge these values (bad version string, etc.) is treated
-        # as not-determinable rather than crashing the dashboard.
+    verdicts = [
+        _node_meets(c.get("observed"), op, targets) for c in applicable
+    ]
+    if any(v is None for v in verdicts):
         return None
+    return all(verdicts)
 
 
 def _bucket(meets: bool | None, due: date | None, as_of: date) -> str:
@@ -96,7 +115,11 @@ def rollout_status(
             if rule_result is None:
                 buckets[NOT_APPLICABLE].append(site)
                 continue
-            meets = _site_meets(rule_result, change["op"], change["target"])
+            meets = _site_meets(
+                rule_result,
+                change["op"],
+                [change["target"], *(change.get("newer_targets") or [])],
+            )
             buckets[_bucket(meets, due, as_of)].append(site)
         out.append(
             {

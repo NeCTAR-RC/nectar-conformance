@@ -18,6 +18,7 @@ from nectar_conformance.results.model import Report
 from nectar_conformance.rules.changelog import (
     changelog_lint,
     fold,
+    live_dated_entries,
     resolve_tag,
     squash,
 )
@@ -263,34 +264,36 @@ def change_history(
 
 
 def list_changes(config: Config, *, tier: str, as_of: date) -> list[dict]:
-    """Dated changes (entries with a ``due``) announced for ``tier`` by ``as_of``.
+    """Dated changes still live for ``tier`` at ``as_of``.
 
-    Each carries the assertion ``op`` and ``target`` value needed to compute per-site
+    Live means the fold still cares about the entry: the currently enforced dated entry
+    plus everything announced but not yet due. A dated entry superseded by a newer one
+    is dropped — its value is no longer what the engine enforces, so judging adoption
+    against it would flag sites that already moved on. Each change carries the assertion
+    ``op`` and ``target`` value needed to compute per-site adoption, plus
+    ``newer_targets``: newer announced values for the same check that also count as
     adoption (see :mod:`nectar_conformance.rollout`).
     """
     changelog = load_changelog(config.checks_dir)
     definitions = load_definitions(config.checks_dir)
     out: list[dict] = []
-    for e in changelog.entries:
-        if e.due is None:
-            continue
-        if not _tier_visible(e.tier, tier):
-            continue
-        if date.fromisoformat(e.effective) > as_of:
-            continue  # announced for the future; not active yet
-        check = definitions.get(e.check_id)
+    for entry, newer_targets in live_dated_entries(
+        changelog, tier=tier, as_of=as_of
+    ):
+        check = definitions.get(entry.check_id)
         if check is None:
             continue
         out.append(
             {
-                "check_id": e.check_id,
+                "check_id": entry.check_id,
                 "title": check.title,
                 "op": check.assertion_op,
-                "target": e.value,
-                "effective": e.effective,
-                "due": e.due,
-                "tier": e.tier,
-                "note": e.note,
+                "target": entry.value,
+                "effective": entry.effective,
+                "due": entry.due,
+                "tier": entry.tier,
+                "note": entry.note,
+                "newer_targets": newer_targets,
             }
         )
     return out

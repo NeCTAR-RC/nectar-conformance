@@ -81,6 +81,19 @@ def test_complete_when_every_applicable_site_adopted():
         assert result["complete"] is True
 
 
+def test_site_on_newer_target_counts_as_adopted():
+    # A site that jumped straight to a newer announced value has moved past this
+    # change, not fallen behind it; a site on neither value is still overdue.
+    reports = {
+        "ahead": _report([_rule("img", "pass", [_check("v3")])]),
+        "behind": _report([_rule("img", "fail", [_check("v1", "fail")])]),
+    }
+    change = dict(_change(PAST), newer_targets=["v3"])
+    result = rollout_status([change], reports, AS_OF)[0]
+    assert result["buckets"][ADOPTED] == ["ahead"]
+    assert result["buckets"][OVERDUE] == ["behind"]
+
+
 def test_not_applicable_when_skipped_unknown_or_missing():
     reports = {
         "c": _report([_rule("img", "skip", [])]),
