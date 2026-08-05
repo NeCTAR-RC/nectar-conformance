@@ -48,6 +48,7 @@ def test_adopted_vs_pending_before_due():
     assert result["buckets"][ADOPTED] == ["a"]
     assert result["buckets"][PENDING] == ["b"]
     assert result["due_passed"] is False
+    assert result["complete"] is False
     assert result["counts"] == {
         ADOPTED: 1,
         PENDING: 1,
@@ -65,6 +66,19 @@ def test_overdue_after_due():
     assert result["buckets"][ADOPTED] == ["a"]
     assert result["buckets"][OVERDUE] == ["b"]
     assert result["due_passed"] is True
+    assert result["complete"] is False
+
+
+def test_complete_when_every_applicable_site_adopted():
+    # N/A sites never block completion; "complete" means no one is pending or
+    # overdue, whether or not the due date has passed.
+    reports = {
+        "a": _report([_rule("img", "pass", [_check("v2")])]),
+        "b": _report([_rule("img", "skip", [])]),
+    }
+    for due in (PAST, FUTURE):
+        result = rollout_status([_change(due)], reports, AS_OF)[0]
+        assert result["complete"] is True
 
 
 def test_not_applicable_when_skipped_unknown_or_missing():

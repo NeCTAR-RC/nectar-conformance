@@ -261,6 +261,11 @@ a {
   color: var(--warn);
 }
 
+.badge-adopted {
+  background: var(--good-bg);
+  color: var(--good);
+}
+
 .score {
   font-weight: 700;
 }
@@ -398,6 +403,17 @@ a {
 
 .timeline-group {
   margin-bottom: 8px;
+}
+
+.show-complete {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
 }
 
 .rollout {
