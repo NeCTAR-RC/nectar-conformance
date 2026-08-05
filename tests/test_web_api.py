@@ -279,3 +279,50 @@ def test_changes_pending_and_rollout_shape(client):
             "overdue",
             "not_applicable",
         }
+        assert isinstance(entry["complete"], bool)
+        assert isinstance(entry["due_passed"], bool)
+
+
+def test_changes_rollout_sorted_by_due_and_flags_complete(tmp_path):
+    # A finished rollout (due passed, every applicable site adopted) is still
+    # returned, flagged complete so the UI can hide it behind a toggle; entries
+    # come back earliest due first regardless of changelog file order.
+    today = date.today()
+    baseline_effective = (today - timedelta(days=100)).isoformat()
+    checks = tmp_path / "checks"
+    shutil.copytree(Path(CHECKS_DIR) / "definitions", checks / "definitions")
+    (checks / "changelog.yaml").write_text(
+        "entries:\n"
+        "  - {check_id: os.database.ubuntu, "
+        f'value: ["24.04", "22.04"], effective: "{baseline_effective}"}}\n'
+        # In flight: the fixture site observes 24.04, so it is pending on 26.04.
+        "  - {check_id: os.database.ubuntu, "
+        f'value: ["26.04"], effective: "{(today - timedelta(days=10)).isoformat()}", '
+        f'due: "{(today + timedelta(days=10)).isoformat()}"}}\n'
+        "  - {check_id: os.mq.ubuntu, "
+        f'value: ["24.04", "22.04"], effective: "{baseline_effective}"}}\n'
+        # Finished: due passed and the site already observes 24.04.
+        "  - {check_id: os.mq.ubuntu, "
+        f'value: ["24.04"], effective: "{(today - timedelta(days=30)).isoformat()}", '
+        f'due: "{(today - timedelta(days=5)).isoformat()}"}}\n'
+    )
+    reports = tmp_path / "reports"
+    reports.mkdir()
+    _populate(
+        reports, checks_dir=str(checks), facts_dir=str(FIXTURES / "facts")
+    )
+    client = _serve(reports, checks_dir=str(checks))
+
+    rollout = client.get("/api/changes/rollout").json()["rollout"]
+    # The past-due mq change sorts ahead of the database one even though the
+    # changelog lists it last.
+    assert [c["check_id"] for c in rollout] == [
+        "os.mq.ubuntu",
+        "os.database.ubuntu",
+    ]
+    mq, db = rollout
+    assert mq["due_passed"] is True
+    assert mq["complete"] is True
+    assert mq["buckets"]["adopted"] == ["ardctest"]
+    assert db["complete"] is False
+    assert db["buckets"]["pending"] == ["ardctest"]

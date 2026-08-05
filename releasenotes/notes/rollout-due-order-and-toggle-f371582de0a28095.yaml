@@ -1,0 +1,10 @@
+---
+features:
+  - |
+    The web dashboard's Rollout page now lists dated changes in due-date
+    order, earliest first, and hides rollouts that every applicable site has
+    already adopted behind a "show fully adopted rollouts" toggle, so the
+    page leads with what still needs action. ``/api/changes/rollout`` now
+    returns every dated change sorted by due date (previously it dropped
+    finished ones), each carrying a ``complete`` flag; the per-site rollout
+    exposure on ``/api/sites`` still lists only actionable changes.

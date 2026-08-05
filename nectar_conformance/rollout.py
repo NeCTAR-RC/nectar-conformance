@@ -77,7 +77,8 @@ def rollout_status(
     ``changes`` come from :func:`nectar_conformance.service.list_changes` (each has
     ``check_id``, ``op``, ``target``, ``due``). ``reports_by_site`` maps site id -> stored
     report dict. Returns one entry per change with a ``buckets`` mapping (bucket -> sorted
-    site ids), a ``counts`` summary, and ``due_passed``.
+    site ids), a ``counts`` summary, ``due_passed``, and ``complete`` (every applicable
+    site has adopted; N/A sites never block completion).
     """
     out: list[dict] = []
     for change in changes:
@@ -105,6 +106,7 @@ def rollout_status(
                 "counts": {
                     name: len(sites) for name, sites in buckets.items()
                 },
+                "complete": not buckets[PENDING] and not buckets[OVERDUE],
             }
         )
     return out
@@ -112,11 +114,7 @@ def rollout_status(
 
 def actionable(rollout: list[dict]) -> list[dict]:
     """Changes still needing action: not yet due, or some site is behind."""
-    return [
-        c
-        for c in rollout
-        if not c["due_passed"] or c["counts"][OVERDUE] or c["counts"][PENDING]
-    ]
+    return [c for c in rollout if not (c["due_passed"] and c["complete"])]
 
 
 def site_rollout(

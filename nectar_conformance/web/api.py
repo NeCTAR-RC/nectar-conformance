@@ -244,8 +244,17 @@ def build_router(settings: WebSettings, store: ReportStore) -> APIRouter:
         return {
             "tier": tier,
             "as_of": today.isoformat(),
-            # Only changes that still need action: not yet due, or someone is behind.
-            "rollout": actionable(rollout),
+            # Every dated change, earliest due first. Each entry carries "complete"
+            # (all applicable sites adopted) so the UI can hide finished rollouts
+            # by default while still offering them behind a toggle.
+            "rollout": sorted(
+                rollout,
+                key=lambda c: (
+                    c["due"] is None,
+                    c["due"] or "",
+                    c["check_id"],
+                ),
+            ),
         }
 
     return router
