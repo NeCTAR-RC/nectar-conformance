@@ -14,7 +14,7 @@ and the source material is `braindump` and `nectar-specification-doc.md` in this
 ## Commands
 
 ```bash
-tox                       # default envlist: py3 (pytest + coverage) and pep8 (flake8)
+tox                       # default envlist: py314 (pytest + coverage) and pep8 (flake8)
 tox -e pep8               # lint only
 .venv/bin/pytest tests/test_engine.py::test_image_tag_drift_fails   # a single test
 pip install -e '.[test]'  # editable install into a venv (needed to refresh CLI entry points)
