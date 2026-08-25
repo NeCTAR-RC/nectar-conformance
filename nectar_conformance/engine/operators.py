@@ -14,6 +14,8 @@ from typing import Any
 
 from packaging.version import Version
 
+from nectar_conformance import values
+
 _PRESENT_FALSE = (None, False)
 
 
@@ -25,6 +27,11 @@ def _to_version(value: Any) -> Version:
 
 
 def op_equals(observed: Any, expected: Any) -> bool:
+    # The expected value may be a pattern mapping ({regex: ...}) bound by the changelog,
+    # so one entry can accept e.g. every rebuild of an image release while a plain scalar
+    # still pins exactly one value.
+    if values.is_pattern(expected):
+        return values.matches(observed, expected)
     return observed == expected
 
 

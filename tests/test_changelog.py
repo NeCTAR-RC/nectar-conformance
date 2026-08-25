@@ -212,6 +212,66 @@ def test_lint_detects_unknown_check(definitions):
     )
 
 
+def test_lint_accepts_valid_pattern_value(definitions):
+    changelog = _changelog(
+        [
+            {
+                "check_id": "nova.compute.image_tag",
+                "value": {"regex": r"29\.4\..*"},
+                "effective": "2026-06-01",
+            },
+        ]
+    )
+    assert changelog_lint(changelog, definitions) == []
+
+
+def test_lint_detects_invalid_pattern(definitions):
+    changelog = _changelog(
+        [
+            {
+                "check_id": "nova.compute.image_tag",
+                "value": {"regex": "29.4.("},
+                "effective": "2026-06-01",
+            },
+        ]
+    )
+    assert any(
+        "invalid pattern" in v for v in changelog_lint(changelog, definitions)
+    )
+
+
+def test_lint_detects_malformed_mapping_value(definitions):
+    # A mapping is only ever the pattern form; anything else is a typo.
+    changelog = _changelog(
+        [
+            {
+                "check_id": "nova.compute.image_tag",
+                "value": {"regexp": "29.*"},
+                "effective": "2026-06-01",
+            },
+        ]
+    )
+    assert any(
+        "mapping value" in v for v in changelog_lint(changelog, definitions)
+    )
+
+
+def test_lint_detects_pattern_on_incapable_op(definitions):
+    # mariadb.version asserts semver_gte, which compares literals only.
+    changelog = _changelog(
+        [
+            {
+                "check_id": "mariadb.version",
+                "value": {"regex": "10.*"},
+                "effective": "2026-06-01",
+            },
+        ]
+    )
+    assert any(
+        "pattern-capable" in v for v in changelog_lint(changelog, definitions)
+    )
+
+
 # --- squash: compact the log into a fresh baseline without losing future behaviour ---
 
 

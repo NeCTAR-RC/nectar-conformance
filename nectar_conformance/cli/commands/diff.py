@@ -7,6 +7,13 @@ from cliff.command import Command
 from nectar_conformance import config as config_mod
 from nectar_conformance.errors import ConformanceError
 from nectar_conformance.service import diff_versions
+from nectar_conformance import values
+
+
+def _fmt(value):
+    # Values print bare here (unlike report messages, which repr them); only a
+    # pattern needs describing so it does not print as a raw dict.
+    return values.describe(value) if values.is_pattern(value) else value
 
 
 class DiffVersions(Command):
@@ -39,7 +46,8 @@ class DiffVersions(Command):
         out.write(f"  changed ({len(diff['changed'])}):\n")
         for change in diff["changed"]:
             out.write(
-                f"    ~ {change['check_id']}: {change['from']} -> {change['to']}\n"
+                f"    ~ {change['check_id']}: "
+                f"{_fmt(change['from'])} -> {_fmt(change['to'])}\n"
             )
         out.write(f"  added ({len(diff['added'])}):\n")
         for cid in diff["added"]:

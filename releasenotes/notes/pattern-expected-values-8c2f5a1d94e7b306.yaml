@@ -1,0 +1,22 @@
+---
+features:
+  - |
+    A changelog entry's ``value`` may now be a pattern mapping,
+    ``value: {regex: '29\.4\..*'}``, for checks asserted with ``equals``. The
+    pattern is a Python regular expression matched against the whole observed
+    value (``re.fullmatch``), so one entry can accept every rebuild of an
+    image release and routine image-tag bumps no longer need a changelog
+    entry each. A plain scalar value keeps exact-match semantics, which is
+    how a security patch pins one specific build: append a scalar entry that
+    supersedes the pattern under the normal dated-rollout rules. No check
+    definition changes are needed. ``changelog lint`` validates pattern
+    values (shape, regex compiles, and the check's operator supports
+    patterns), and reports, remediation text, ``check list``, ``version
+    diff`` and the dashboard render a pattern as ``a value matching /.../``
+    rather than a raw mapping.
+upgrade:
+  - |
+    Older tool releases compare a pattern-mapping changelog value with plain
+    equality and fail every site against it. Deploy this release everywhere
+    before authoring the first pattern value in the
+    ``nectar-conformance-checks`` changelog.

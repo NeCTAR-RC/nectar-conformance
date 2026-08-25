@@ -12,6 +12,7 @@ from typing import TextIO
 
 from rich.console import Console
 
+from nectar_conformance import values
 from nectar_conformance.results.model import (
     Advisory,
     Report,
@@ -116,7 +117,7 @@ def render(report: Report, stream: TextIO, *, due_within: int = 30) -> None:
                 days = _days_left(adv, report)
                 when = f"in {days} day(s)" if days is not None else "soon"
                 line = (
-                    f"{adv.upcoming_value!r} for {adv.tier} "
+                    f"{values.describe(adv.upcoming_value)} for {adv.tier} "
                     f"sites by {adv.due} ({when})"
                 )
                 if rr.rule_id in at_risk_ids:
@@ -146,7 +147,7 @@ def render(report: Report, stream: TextIO, *, due_within: int = 30) -> None:
         )
         for rr, adv, days in at_risk:
             console.print(
-                f"  {rr.rule_id}  {adv.upcoming_value!r} due {adv.due} "
-                f"(in {days} day(s))"
+                f"  {rr.rule_id}  {values.describe(adv.upcoming_value)} "
+                f"due {adv.due} (in {days} day(s))"
             )
     console.print(f"Result: [bold]{s['result'].upper()}[/bold]")

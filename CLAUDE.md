@@ -98,6 +98,14 @@ The pipeline is `DataSource -> SiteModel -> engine.evaluate(model, rules) -> Rep
 - **The operator vocabulary must stay in sync** between `rules/schema.json` (the
   `assertion.op` enum) and `engine/operators.py` (the `OPERATORS` registry).
   `tests/test_operators.py::test_schema_and_registry_agree` fails if they diverge.
+- **A changelog value can be a pattern, and pattern-ness lives in the value layer**:
+  `value: {regex: '29\.4\..*'}` (full-string `re.fullmatch`, `values.py`) lets one entry
+  accept every rebuild of an image release, while a plain scalar keeps exact-pin
+  semantics, so a security patch is just a scalar entry superseding the pattern under
+  normal rollout rules. Only `equals` checks accept patterns (`changelog_lint` enforces
+  the shape, that the regex compiles, and the op). Rendering must never show the raw dict: use
+  `values.describe` (backend) / `fmtValue` (frontend). Older tool releases fail pattern
+  values, so ship the tool before authoring one in `nectar-conformance-checks`.
 - **The check data is not in this repo; tests carry their own mirror**:
   `tests/fixtures/checks/` holds a frozen `changelog.yaml` plus a copy of the real
   `definitions/`, loaded via the `fixture_changelog`/`fixture_definitions`/`fixture_rules`

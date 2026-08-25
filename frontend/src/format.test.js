@@ -19,6 +19,10 @@ describe('fmtValue', () => {
     expect(fmtValue('3.13.7-1')).toBe('3.13.7-1')
     expect(fmtValue(3)).toBe('3')
   })
+  it('renders pattern values as a match, not an object', () => {
+    expect(fmtValue({ regex: '29\\.4\\..*' })).toBe('matching /29\\.4\\..*/')
+    expect(fmtValue({ other: 1 })).toBe('{"other":1}')
+  })
 })
 
 describe('fmtAge', () => {

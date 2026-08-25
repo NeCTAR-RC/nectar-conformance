@@ -24,6 +24,7 @@ from __future__ import annotations
 from datetime import date
 import re
 
+from nectar_conformance import values
 from nectar_conformance.errors import RuleError, VersionError
 from nectar_conformance.rules.model import (
     ChangeEntry,
@@ -287,6 +288,41 @@ def squash(
     return Changelog(entries=tuple(baselines + carried), tags=tags)
 
 
+def _lint_value(entry: ChangeEntry, check: CheckDef | None) -> list[str]:
+    """Problems with one entry's value; only mapping (pattern) values need vetting.
+
+    Literal values stay opaque (the definition's operator gives them meaning), but a
+    mapping is only ever the pattern form, so its shape, its regex and the check's
+    operator support are all checkable here, before the engine turns a bad pattern
+    into UNKNOWN results at run time.
+    """
+    if not isinstance(entry.value, dict):
+        return []
+    prefix = f"{entry.check_id} (effective {entry.effective})"
+    if set(entry.value) != {values.PATTERN_KEY} or not isinstance(
+        entry.value[values.PATTERN_KEY], str
+    ):
+        return [
+            f"{prefix}: mapping value must be exactly "
+            f"{{{values.PATTERN_KEY}: <string>}}"
+        ]
+    problems = []
+    try:
+        re.compile(values.pattern_text(entry.value))
+    except re.error as exc:
+        problems.append(f"{prefix}: invalid pattern: {exc}")
+    if (
+        check is not None
+        and check.assertion_op not in values.PATTERN_CAPABLE_OPS
+    ):
+        problems.append(
+            f"{prefix}: pattern value needs a pattern-capable op "
+            f"({', '.join(sorted(values.PATTERN_CAPABLE_OPS))}), "
+            f"check uses '{check.assertion_op}'"
+        )
+    return problems
+
+
 def changelog_lint(
     changelog: Changelog, definitions: dict[str, CheckDef]
 ) -> list[str]:
@@ -301,6 +337,7 @@ def changelog_lint(
             violations.append(
                 f"{e.check_id}: due {e.due} is before effective {e.effective}"
             )
+        violations.extend(_lint_value(e, definitions.get(e.check_id)))
 
     # No two entries collide on the same (check_id, tier, effective).
     seen: set = set()

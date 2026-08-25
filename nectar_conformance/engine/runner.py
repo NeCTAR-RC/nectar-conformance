@@ -27,6 +27,7 @@ from nectar_conformance.rules.model import PLUGIN, Rule
 from nectar_conformance.engine import operators
 from nectar_conformance.engine.queries import MISSING, node_value, site_count
 from nectar_conformance.engine.selectors import resolve as resolve_selector
+from nectar_conformance import values
 
 _PRESENCE_OPS = ("present", "absent")
 
@@ -66,9 +67,12 @@ def _apply_with_pending(
 
 
 def _expected_clause(rule: Rule, op: str) -> str:
-    clause = f"expected {op} {rule.expected!r}"
+    clause = f"expected {op} {values.describe(rule.expected)}"
     if rule.has_pending:
-        clause += f" (upcoming {rule.pending_value!r} due {rule.pending_due})"
+        clause += (
+            f" (upcoming {values.describe(rule.pending_value)}"
+            f" due {rule.pending_due})"
+        )
     return clause
 
 
@@ -81,7 +85,12 @@ def _render_remediation(rule: Rule, target) -> Remediation | None:
         parts.append(tmpl.guidance.strip())
     if tmpl.hiera_key:
         where = f" in {tmpl.hint_file}" if tmpl.hint_file else ""
-        if target is not None:
+        if values.is_pattern(target):
+            # A pattern is not a settable literal; say what the value must match.
+            parts.append(
+                f"Set {tmpl.hiera_key} to {values.describe(target)}{where}."
+            )
+        elif target is not None:
             parts.append(f"Set {tmpl.hiera_key}: {target!r}{where}.")
         else:
             parts.append(f"Set {tmpl.hiera_key}{where}.")

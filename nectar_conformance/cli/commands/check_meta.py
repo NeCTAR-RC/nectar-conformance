@@ -7,6 +7,7 @@ from cliff.command import Command
 from nectar_conformance import config as config_mod
 from nectar_conformance.errors import ConformanceError
 from nectar_conformance.service import get_check, list_checks
+from nectar_conformance import values
 
 
 def _resolve_version(parsed_args, cfg):
@@ -49,7 +50,7 @@ class CheckList(Command):
             expected = (
                 ""
                 if rule.expected is None
-                else f"  expected={rule.expected!r}"
+                else f"  expected={values.describe(rule.expected)}"
             )
             section = rule.spec_section or "-"
             out.write(f"  {rule.id:30} ({section}){expected}\n")

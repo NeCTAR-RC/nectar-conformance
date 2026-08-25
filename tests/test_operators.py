@@ -2,6 +2,7 @@
 
 from importlib import resources
 import json
+import re
 
 import pytest
 
@@ -13,6 +14,18 @@ from nectar_conformance.engine import operators
     [
         ("equals", "x", "x", True),
         ("equals", "x", "y", False),
+        # A pattern-mapping expected value full-matches the observed string, so one
+        # changelog entry can accept every rebuild of an image release.
+        (
+            "equals",
+            "29.4.0-26-g22f2702050-11-35",
+            {"regex": r"29\.4\..*"},
+            True,
+        ),
+        ("equals", "29.5.0-1-gabc", {"regex": r"29\.4\..*"}, False),
+        ("equals", "129.4.0", {"regex": r"29\.4\..*"}, False),
+        # A mapping without the pattern key keeps plain equality semantics.
+        ("equals", {"a": 1}, {"a": 1}, True),
         ("not_equals", "x", "y", True),
         ("regex", "glance-api:30.1.0", r"30\.1\.0$", True),
         ("semver_gte", "10.11", "10.4", True),
@@ -42,6 +55,13 @@ def test_operator(op, observed, expected, result):
 def test_unknown_operator_raises():
     with pytest.raises(ValueError):
         operators.apply("nope", 1, 1)
+
+
+def test_invalid_pattern_raises():
+    # The runner downgrades operator exceptions to UNKNOWN, so a broken pattern
+    # must raise rather than silently pass or fail.
+    with pytest.raises(re.error):
+        operators.apply("equals", "x", {"regex": "("})
 
 
 def test_schema_and_registry_agree():

@@ -1,9 +1,15 @@
 // Pure display formatters (no React), so they are unit-testable on their own.
 
-// Format any value (scalars, lists) for compact display in a cell.
+// Format any value (scalars, lists, pattern mappings) for compact display in a cell.
+// A {regex: ...} value is the changelog's pattern form (nectar_conformance/values.py):
+// the requirement is "anything matching", not a literal to display verbatim.
 export function fmtValue(value) {
   if (value == null) return '—'
   if (Array.isArray(value)) return value.join(', ')
+  if (typeof value === 'object') {
+    if (typeof value.regex === 'string') return `matching /${value.regex}/`
+    return JSON.stringify(value)
+  }
   return String(value)
 }
 

@@ -238,6 +238,107 @@ def test_rollout_wrong_value_fails_before_due(site_model):
     assert rr.status is Status.FAIL
 
 
+# --- pattern-valued expected values ({regex: ...} bound by the changelog) ---
+
+_SERIES = _changelog(
+    [
+        {
+            "check_id": "nova.compute.image_tag",
+            "value": {"regex": r"27\.5\..*"},
+            "effective": "2026-01-01",
+        },
+    ]
+)
+
+
+def _series_rules(as_of=date(2026, 7, 1)):
+    return fold(_SERIES, fixture_definitions(), tier="prod", as_of=as_of)
+
+
+def test_pattern_value_accepts_any_build_of_the_series(site_model):
+    # The fixture tag and a later rebuild both satisfy the one pattern entry, so a
+    # routine image refresh needs no changelog change.
+    for tag in ("27.5.1", "27.5.2-26-g22f2702050-11-35"):
+        model = _set_nova_tag(site_model, tag)
+        rr = _by_id(evaluate(model, _series_rules(), VERSION))[
+            "nova.compute.image_tag"
+        ]
+        assert rr.status is Status.PASS, tag
+
+
+def test_pattern_value_is_full_match(site_model):
+    # A different series fails, and so does a tag that merely contains the pattern
+    # as a fragment (patterns match the whole observed value).
+    for tag in ("28.0.0-1-gabc", "127.5.1"):
+        model = _set_nova_tag(site_model, tag)
+        rr = _by_id(evaluate(model, _series_rules(), VERSION))[
+            "nova.compute.image_tag"
+        ]
+        assert rr.status is Status.FAIL, tag
+
+
+def test_pattern_failure_renders_match_not_dict(site_model):
+    model = _set_nova_tag(site_model, "28.0.0")
+    rr = _by_id(evaluate(model, _series_rules(), VERSION))[
+        "nova.compute.image_tag"
+    ]
+    failing = [c for c in rr.results if c.status is Status.FAIL]
+    assert r"a value matching /27\.5\..*/" in failing[0].message
+    fix = failing[0].remediation
+    assert fix is not None
+    assert r"a value matching /27\.5\..*/" in fix.guidance
+    assert "{" not in fix.guidance
+
+
+def test_security_pin_supersedes_pattern(site_model):
+    # A pattern accepts the whole series until a security patch pins one exact
+    # build; from the pin's due date only that build passes.
+    log = _changelog(
+        [
+            {
+                "check_id": "nova.compute.image_tag",
+                "value": {"regex": r"27\.5\..*"},
+                "effective": "2026-01-01",
+            },
+            {
+                "check_id": "nova.compute.image_tag",
+                "value": "27.5.9-security",
+                "effective": "2026-08-01",
+                "due": "2026-08-15",
+            },
+        ]
+    )
+
+    def rules(as_of):
+        return fold(log, fixture_definitions(), tier="prod", as_of=as_of)
+
+    vulnerable = _set_nova_tag(site_model, "27.5.1")
+    patched = _set_nova_tag(site_model, "27.5.9-security")
+
+    # Before the due date the vulnerable build still passes, with an advisory
+    # naming the pinned build.
+    rr = _by_id(evaluate(vulnerable, rules(date(2026, 8, 10)), VERSION))[
+        "nova.compute.image_tag"
+    ]
+    assert rr.status is Status.PASS
+    assert rr.advisory is not None
+    assert rr.advisory.upcoming_value == "27.5.9-security"
+
+    # On and from the due date the pin is enforced.
+    assert (
+        _by_id(evaluate(vulnerable, rules(date(2026, 8, 15)), VERSION))[
+            "nova.compute.image_tag"
+        ].status
+        is Status.FAIL
+    )
+    assert (
+        _by_id(evaluate(patched, rules(date(2026, 8, 15)), VERSION))[
+            "nova.compute.image_tag"
+        ].status
+        is Status.PASS
+    )
+
+
 # --- composite (all_of) selectors and fact_match presence matching ---
 
 _COMPUTE = "nectar::profile::nova::compute"
