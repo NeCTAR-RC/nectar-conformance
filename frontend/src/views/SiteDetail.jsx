@@ -34,6 +34,9 @@ export default function SiteDetail() {
               </span>
               <span className="muted">
                 {report.summary.pass} pass · {report.summary.fail} fail ·{' '}
+                {report.summary.excepted
+                  ? `${report.summary.excepted} excepted · `
+                  : ''}
                 {report.summary.skip} skip · {report.summary.advisory} advisory
               </span>
               <span className="muted">
@@ -74,6 +77,7 @@ export default function SiteDetail() {
 
 function RuleRow({ rule }) {
   const failing = rule.checks.filter((c) => c.status === 'fail')
+  const excepted = rule.checks.filter((c) => c.status === 'excepted')
   const advisory = rule.checks.find((c) => c.advisory)?.advisory
   // Recompute the countdown from the absolute due date: the days baked into a stored
   // report go stale between refreshes. A passing rule due soon will fail — flag it.
@@ -95,11 +99,26 @@ function RuleRow({ rule }) {
           <div key={i} className="small">
             {c.node && <span className="node">{c.node}: </span>}
             <span>{c.message}</span>
+            {c.exception?.expired && (
+              <span className="exception-expired">
+                {' '}
+                — exception expired {c.exception.expiry}: {c.exception.reason}
+              </span>
+            )}
           </div>
         ))}
         {failing.length > 6 && (
           <div className="muted small">+{failing.length - 6} more</div>
         )}
+        {excepted.map((c, i) => (
+          <div key={`x${i}`} className="exception-line small">
+            {c.node && <span className="node">{c.node}: </span>}
+            <span>
+              excepted: {c.exception?.reason}
+              {c.exception?.expiry && ` (until ${c.exception.expiry})`}
+            </span>
+          </div>
+        ))}
         {advisory && (
           <div className={`advisory small${urgent ? ' advisory-urgent' : ''}`}>
             upcoming: {fmtValue(advisory.upcoming_value)} (due {advisory.due},{' '}

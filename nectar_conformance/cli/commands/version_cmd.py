@@ -31,7 +31,7 @@ class VersionList(Command):
         cfg = config_mod.load(parsed_args.config, overrides)
         try:
             versions = available_versions(cfg)
-            violations = lint_versions(cfg)
+            violations, _warnings = lint_versions(cfg)
         except ConformanceError as exc:
             self.app.stderr.write(f"error: {exc}\n")
             return 3

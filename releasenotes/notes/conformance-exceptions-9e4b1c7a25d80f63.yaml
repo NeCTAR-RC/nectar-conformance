@@ -1,0 +1,23 @@
+---
+features:
+  - |
+    Site-scoped conformance exceptions. An optional ``exceptions.yaml`` in the
+    checks repository grants one site permission to fail one check on an explicit
+    list of hosts (full certnames, matched exactly), with a required reason and
+    optional ``effective``/``expiry`` dates (active in ``[effective, expiry)``,
+    judged at the evaluation instant so ``--as-of`` governs them like the
+    changelog). A matching failure is reported with the new ``excepted`` status:
+    it does not count as a conformance failure (exit code, score) but stays
+    visible in reports and on the dashboard with its reason and expiry. An
+    expired exception no longer suppresses anything; the failing result is
+    annotated with the lapsed exception, and ``changelog lint`` emits a warning
+    (without failing) so it gets cleaned up or renewed. A new ``exception list``
+    command shows the authored exceptions and whether each is active, pending or
+    expired.
+upgrade:
+  - |
+    The report JSON schema version is now ``2.1``: check results may carry the
+    new ``excepted`` status and an ``exception`` block. Older tool releases
+    ignore ``exceptions.yaml`` entirely, so the file can land in the checks
+    repository at any time, but an exception only takes effect (and is only
+    linted) where this release is deployed.

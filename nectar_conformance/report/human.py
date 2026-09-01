@@ -25,6 +25,7 @@ _GLYPH = {
     Status.FAIL: ("[red]FAIL[/red]", "✗"),
     Status.SKIP: ("[dim]SKIP[/dim]", "-"),
     Status.UNKNOWN: ("[yellow]UNKN[/yellow]", "?"),
+    Status.EXCEPTED: ("[magenta]EXCP[/magenta]", "~"),
 }
 
 
@@ -37,14 +38,43 @@ def _affected(rule_result: RuleResult) -> list[str]:
 
 
 def _detail(rule_result: RuleResult) -> str:
-    # Prefer a failing result's message, else the first result's message.
-    failing = [c for c in rule_result.results if c.status is Status.FAIL]
-    chosen = (
-        failing[0]
-        if failing
-        else (rule_result.results[0] if rule_result.results else None)
-    )
-    return chosen.message if chosen else ""
+    # Prefer a failing result's message, then an excepted one's (the rule is only
+    # excepted when nothing genuinely fails), else the first result's message.
+    for wanted in (Status.FAIL, Status.EXCEPTED):
+        for c in rule_result.results:
+            if c.status is wanted:
+                return c.message
+    return rule_result.results[0].message if rule_result.results else ""
+
+
+def _excepted_lines(rule_result: RuleResult) -> list[str]:
+    """One line per (reason, expiry) group of excepted hosts on this rule."""
+    groups: dict[tuple, list[str]] = {}
+    for c in rule_result.results:
+        if c.status is Status.EXCEPTED and c.exception is not None:
+            key = (c.exception.reason, c.exception.expiry)
+            groups.setdefault(key, []).append(c.node or "?")
+    lines = []
+    for (reason, expiry), hosts in groups.items():
+        until = f" (until {expiry})" if expiry else ""
+        lines.append(f"{', '.join(hosts)}: {reason}{until}")
+    return lines
+
+
+def _expired_lines(rule_result: RuleResult) -> list[str]:
+    """Failures whose matching exception has lapsed: surface the expiry loudly."""
+    lines = []
+    for c in rule_result.results:
+        if (
+            c.status is Status.FAIL
+            and c.exception is not None
+            and c.exception.expired
+        ):
+            lines.append(
+                f"{c.node or '?'}: exception expired {c.exception.expiry}: "
+                f"{c.exception.reason}"
+            )
+    return lines
 
 
 def _remediation(rule_result: RuleResult) -> str:
@@ -112,6 +142,10 @@ def render(report: Report, stream: TextIO, *, due_within: int = 30) -> None:
             hosts = _affected(rr)
             if hosts:
                 console.print(f"        hosts: {', '.join(hosts)}")
+            for line in _excepted_lines(rr):
+                console.print(f"        [magenta]Excepted:[/magenta] {line}")
+            for line in _expired_lines(rr):
+                console.print(f"        [bold red]Expired:[/bold red] {line}")
             adv = rr.advisory
             if adv is not None:
                 days = _days_left(adv, report)
@@ -131,9 +165,11 @@ def render(report: Report, stream: TextIO, *, due_within: int = 30) -> None:
                 console.print(f"        [cyan]Fix:[/cyan] {fix}")
 
     s = report.summary
+    excepted = f"{s['excepted']} excepted  " if s.get("excepted") else ""
     console.print(
         f"\nSummary: {s['total']} checks  "
-        f"{s['pass']} pass  {s['fail']} fail  {s['skip']} skip  {s['unknown']} unknown   "
+        f"{s['pass']} pass  {s['fail']} fail  {excepted}"
+        f"{s['skip']} skip  {s['unknown']} unknown   "
         f"score {int(round(s['score'] * 100))}%"
     )
     if s.get("advisory"):

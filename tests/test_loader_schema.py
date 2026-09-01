@@ -8,10 +8,15 @@ from conftest import CHECKS_FIXTURE
 import pytest
 
 from nectar_conformance.errors import RuleError
-from nectar_conformance.rules.loader import load_changelog, load_definitions
+from nectar_conformance.rules.loader import (
+    load_changelog,
+    load_definitions,
+    load_exceptions,
+)
 from nectar_conformance.rules.schema import (
     validate_changelog,
     validate_definition,
+    validate_exceptions,
 )
 
 
@@ -20,6 +25,18 @@ def test_definitions_and_changelog_load_from_a_dir():
     changelog = load_changelog(str(CHECKS_FIXTURE))
     assert "glance.api.image_tag" in definitions
     assert "2026.1" in changelog.tags
+
+
+def test_exceptions_load_from_a_dir():
+    exceptions = load_exceptions(str(CHECKS_FIXTURE))
+    assert len(exceptions) == 1
+    assert exceptions[0].check_id == "nova.compute.image_tag"
+    assert exceptions[0].site == "ardctest"
+
+
+def test_exceptions_file_is_optional(tmp_path):
+    # Unlike the changelog, an absent exceptions.yaml just means no exceptions.
+    assert load_exceptions(str(tmp_path)) == []
 
 
 def test_loader_requires_a_checks_dir():
@@ -123,3 +140,34 @@ def test_changelog_bad_date_rejected():
     bad = {"entries": [{"check_id": "a.b", "effective": "1 June 2026"}]}
     with pytest.raises(RuleError):
         validate_changelog(bad)
+
+
+def test_malformed_exceptions_rejected():
+    # 'reason' is required, and so is a non-empty hosts list.
+    no_reason = {
+        "exceptions": [
+            {"check_id": "a.b", "site": "s", "hosts": ["h.example"]}
+        ]
+    }
+    with pytest.raises(RuleError):
+        validate_exceptions(no_reason)
+    empty_hosts = {
+        "exceptions": [
+            {"check_id": "a.b", "site": "s", "hosts": [], "reason": "r"}
+        ]
+    }
+    with pytest.raises(RuleError):
+        validate_exceptions(empty_hosts)
+    bad_date = {
+        "exceptions": [
+            {
+                "check_id": "a.b",
+                "site": "s",
+                "hosts": ["h.example"],
+                "reason": "r",
+                "expiry": "1 June 2026",
+            }
+        ]
+    }
+    with pytest.raises(RuleError):
+        validate_exceptions(bad_date)

@@ -10,6 +10,7 @@ from nectar_conformance.report import human
 from nectar_conformance.results.model import (
     Advisory,
     CheckResult,
+    ExceptionNote,
     REPORT_SCHEMA_VERSION,
     Report,
     RuleResult,
@@ -117,6 +118,72 @@ def test_human_render_due_within_widens_window():
     report = _mk_report(_mk_rule("chk.pass", Status.PASS, far))
     text = _render(report, due_within=365)
     assert "At risk: 1 passing check(s) will fail within 365 days" in text
+
+
+# --- excepted results: serialisation and rendering -----------------------------------
+
+
+def _excepted_report(expired=False):
+    note = ExceptionNote(
+        reason="nested virt sanctioned here",
+        expiry="2027-01-01",
+        expired=expired,
+        note="ticket-123",
+    )
+    check = CheckResult(
+        rule_id="nova.compute.nested_virt.intel",
+        title="nested virt",
+        spec_section="Compute Node",
+        status=Status.FAIL if expired else Status.EXCEPTED,
+        message="observed 'Y'",
+        node="cc2.example.test",
+        exception=note,
+    )
+    return _mk_report(
+        RuleResult(
+            rule_id=check.rule_id,
+            title=check.title,
+            spec_section=check.spec_section,
+            results=(check,),
+        )
+    )
+
+
+def test_json_contract_excepted_block():
+    data = report_to_dict(_excepted_report())
+    rule = data["results"][0]
+    assert rule["status"] == "excepted"
+    check = rule["checks"][0]
+    assert check["status"] == "excepted"
+    assert check["exception"] == {
+        "reason": "nested virt sanctioned here",
+        "expiry": "2027-01-01",
+        "expired": False,
+        "note": "ticket-123",
+    }
+    assert data["summary"]["excepted"] == 1
+    assert data["summary"]["result"] == "pass"
+
+
+def test_human_render_excepted():
+    # Rich wraps long lines, so assert against whitespace-collapsed text.
+    text = " ".join(_render(_excepted_report()).split())
+    assert "EXCP" in text
+    assert (
+        "Excepted: cc2.example.test: nested virt sanctioned here "
+        "(until 2027-01-01)" in text
+    )
+    assert "1 excepted" in text
+    assert "Result: PASS" in text
+
+
+def test_human_render_expired_exception_still_fails():
+    text = " ".join(_render(_excepted_report(expired=True)).split())
+    assert (
+        "Expired: cc2.example.test: exception expired 2027-01-01: "
+        "nested virt sanctioned here" in text
+    )
+    assert "Result: FAIL" in text
 
 
 def test_human_render_days_none_falls_back_to_due():

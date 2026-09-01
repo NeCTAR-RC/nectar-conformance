@@ -379,3 +379,71 @@ def test_changelog_lint_reports_violations(tmp_path, capsys):
 def test_changelog_lint_missing_dir_is_operational_error(tmp_path):
     code = main(["changelog", "lint", "--checks-dir", str(tmp_path / "nope")])
     assert code == 3
+
+
+# --- conformance exceptions ------------------------------------------------------------
+
+_EXPIRING_EXCEPTIONS = """\
+exceptions:
+  - check_id: glance.api.image_tag
+    site: ardctest
+    hosts: [oc2.example.test]
+    reason: "old glance pinned while the image build is fixed"
+    expiry: "2026-07-01"
+"""
+
+
+def test_changelog_lint_expired_exception_warns_but_passes(tmp_path, capsys):
+    checks = Path(
+        _checks_dir(tmp_path, (CHECKS_FIXTURE / "changelog.yaml").read_text())
+    )
+    (checks / "exceptions.yaml").write_text(_EXPIRING_EXCEPTIONS)
+    # Before expiry: clean.
+    code = main(
+        [
+            "changelog",
+            "lint",
+            "--checks-dir",
+            str(checks),
+            "--as-of",
+            "2026-06-15",
+        ]
+    )
+    assert code == 0
+    assert "warning" not in capsys.readouterr().err
+    # On/after expiry: a warning on stderr, but the lint still passes.
+    code = main(
+        [
+            "changelog",
+            "lint",
+            "--checks-dir",
+            str(checks),
+            "--as-of",
+            "2026-07-01",
+        ]
+    )
+    err = capsys.readouterr().err
+    assert code == 0
+    assert "warning" in err and "expired on 2026-07-01" in err
+
+
+def test_exception_list_shows_state(capsys):
+    code = main(
+        ["exception", "list", "--checks-dir", _CHECKS, "--as-of", "2026-06-15"]
+    )
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "nova.compute.image_tag" in out
+    assert "site=ardctest" in out
+    assert "[active]" in out
+    assert "fixture waiver" in out
+
+
+def test_exception_list_empty(tmp_path, capsys):
+    checks = _checks_dir(
+        tmp_path, (CHECKS_FIXTURE / "changelog.yaml").read_text()
+    )
+    code = main(["exception", "list", "--checks-dir", checks])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "No conformance exceptions." in out

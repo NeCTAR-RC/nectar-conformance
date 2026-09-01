@@ -83,9 +83,10 @@ function compareSections(a, b) {
 }
 
 // Roll a section's rule statuses up to one status, mirroring the backend's
-// precedence (results/model.py): any fail wins, else unknown, else pass; a
-// section where nothing applied stays "skip".
-const STATUS_PRECEDENCE = ['fail', 'unknown', 'pass', 'skip']
+// precedence (results/model.py): any fail wins, else excepted (a live waiver
+// stays visible), else unknown, else pass; a section where nothing applied
+// stays "skip".
+const STATUS_PRECEDENCE = ['fail', 'excepted', 'unknown', 'pass', 'skip']
 
 export function sectionStatus(rows) {
   const present = new Set(rows.map((r) => r.status))

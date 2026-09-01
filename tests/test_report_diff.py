@@ -40,3 +40,13 @@ def test_compare_added_and_removed():
     diff = compare_reports(old, new)
     assert [r["rule_id"] for r in diff["removed"]] == ["a.b"]
     assert [r["rule_id"] for r in diff["added"]] == ["c.d"]
+
+
+def test_compare_treats_excepted_as_not_failing():
+    old = _report([("a.b", "fail"), ("c.d", "excepted")])
+    new = _report([("a.b", "excepted"), ("c.d", "fail")])
+    diff = compare_reports(old, new)
+    # A newly granted exception fixes the failure; a lapsed/removed one regresses it.
+    assert [r["rule_id"] for r in diff["fixed"]] == ["a.b"]
+    assert [r["rule_id"] for r in diff["regressed"]] == ["c.d"]
+    assert diff["still_failing"] == []

@@ -43,7 +43,7 @@ def compare_reports(old: dict, new: dict) -> dict:
             continue
         os_, ns = old_r["status"], new_r["status"]
         row = {"rule_id": rule_id, "old": os_, "new": ns}
-        if os_ == "fail" and ns == "pass":
+        if os_ == "fail" and ns in ("pass", "excepted"):
             fixed.append(row)
         elif os_ != "fail" and ns == "fail":
             regressed.append(row)
