@@ -1,0 +1,19 @@
+---
+# Frozen conformance exceptions used ONLY by the test suite (see changelog.yaml's
+# header for the fixture-dir rationale).
+#
+# Deliberately inert for the shared fixtures: the compute hosts named here PASS
+# nova.compute.image_tag in the healthy `site_model` fixture and do not exist in the
+# static catalog fixtures, so loading this file never changes an existing test's
+# outcome (an exception only ever rewrites a FAIL). Tests that need an exception to
+# fire write their own exceptions.yaml into a temp checks dir.
+exceptions:
+  - check_id: nova.compute.image_tag
+    site: ardctest
+    hosts:
+      - cc1.example.test
+      - cc2.example.test
+    reason: "fixture waiver: pinned compute image during hardware validation"
+    effective: "2026-01-01"
+    expiry: "2099-01-01"
+    note: "test fixture only"

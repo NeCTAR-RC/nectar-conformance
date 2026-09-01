@@ -14,6 +14,7 @@ from nectar_conformance.config import DEFAULT_PUPPETDB_URLS, Config
 from nectar_conformance.datasources.base import get_datasource
 from nectar_conformance.engine.runner import evaluate
 from nectar_conformance.errors import RuleError, VersionError
+from nectar_conformance.results.exceptions import apply_exceptions
 from nectar_conformance.results.model import Report
 from nectar_conformance.rules.changelog import (
     changelog_lint,
@@ -22,9 +23,11 @@ from nectar_conformance.rules.changelog import (
     resolve_tag,
     squash,
 )
+from nectar_conformance.rules.exceptions import exceptions_lint, state
 from nectar_conformance.rules.loader import (
     load_changelog,
     load_definitions,
+    load_exceptions,
     read_changelog_text,
     writable_checks_dir,
 )
@@ -99,7 +102,13 @@ def run_check(
     model = datasource.load_site(site)
     label = version or "(live)"
     generated_at = f"{as_of}T00:00:00Z" if as_of else None
-    return evaluate(model, rules, label, as_of=generated_at)
+    report = evaluate(model, rules, label, as_of=generated_at)
+    # Site-scoped exceptions are applied over the finished report at the same instant
+    # the changelog was folded at, so --as-of governs them identically.
+    exceptions = load_exceptions(config.checks_dir)
+    if exceptions:
+        report = apply_exceptions(report, exceptions, as_of=instant)
+    return report
 
 
 def available_versions(config: Config) -> list[str]:
@@ -165,10 +174,49 @@ def diff_versions(config: Config, version_a: str, version_b: str) -> dict:
     }
 
 
-def lint_versions(config: Config) -> list[str]:
-    return changelog_lint(
-        load_changelog(config.checks_dir), load_definitions(config.checks_dir)
+def lint_versions(
+    config: Config, *, as_of: str | None = None
+) -> tuple[list[str], list[str]]:
+    """Lint the checks dir (changelog + exceptions): (errors, warnings).
+
+    Changelog problems are always errors. Exceptions add structural errors plus
+    housekeeping warnings (an expired entry, an exception on a site-level check),
+    judged at ``as_of`` (default: today).
+    """
+    changelog = load_changelog(config.checks_dir)
+    definitions = load_definitions(config.checks_dir)
+    errors = changelog_lint(changelog, definitions)
+    instant = _resolve_instant(changelog, None, as_of)
+    exc_errors, warnings = exceptions_lint(
+        load_exceptions(config.checks_dir), definitions, as_of=instant
     )
+    return errors + exc_errors, warnings
+
+
+def list_exceptions(
+    config: Config, *, site: str | None = None, as_of: str | None = None
+) -> list[dict]:
+    """The authored exceptions, each with its state at ``as_of`` (default: today)."""
+    changelog = load_changelog(config.checks_dir)
+    instant = _resolve_instant(changelog, None, as_of)
+    out = []
+    for e in load_exceptions(config.checks_dir):
+        if site and e.site != site:
+            continue
+        out.append(
+            {
+                "check_id": e.check_id,
+                "site": e.site,
+                "hosts": sorted(e.hosts),
+                "reason": e.reason,
+                "effective": e.effective,
+                "expiry": e.expiry,
+                "note": e.note,
+                "state": state(e, instant),
+            }
+        )
+    out.sort(key=lambda item: (item["site"], item["check_id"]))
+    return out
 
 
 # -- Web dashboard helpers -----------------------------------------------------

@@ -92,11 +92,13 @@ describe('groupBySection', () => {
 
 describe('sectionStatus', () => {
   const rows = (...statuses) => statuses.map((status) => ({ status }))
-  it('rolls up with fail > unknown > pass > skip precedence', () => {
+  it('rolls up with fail > excepted > unknown > pass > skip precedence', () => {
     expect(sectionStatus(rows('pass', 'fail', 'unknown'))).toBe('fail')
     expect(sectionStatus(rows('pass', 'unknown', 'skip'))).toBe('unknown')
     expect(sectionStatus(rows('pass', 'skip'))).toBe('pass')
     expect(sectionStatus(rows('skip', 'skip'))).toBe('skip')
+    expect(sectionStatus(rows('excepted', 'fail'))).toBe('fail')
+    expect(sectionStatus(rows('pass', 'excepted', 'unknown'))).toBe('excepted')
   })
   it('treats an empty section as skip', () => {
     expect(sectionStatus([])).toBe('skip')
@@ -114,6 +116,14 @@ describe('fmtStatusCounts', () => {
     expect(fmtStatusCounts(rows)).toBe('1 fail · 2 pass · 1 skip')
     expect(fmtStatusCounts([{ status: 'pass' }])).toBe('1 pass')
     expect(fmtStatusCounts([])).toBe('')
+  })
+  it('includes excepted after fail', () => {
+    const rows = [
+      { status: 'pass' },
+      { status: 'excepted' },
+      { status: 'fail' },
+    ]
+    expect(fmtStatusCounts(rows)).toBe('1 fail · 1 excepted · 1 pass')
   })
 })
 

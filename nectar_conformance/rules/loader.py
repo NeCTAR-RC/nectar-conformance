@@ -16,10 +16,15 @@ from pathlib import Path
 import yaml
 
 from nectar_conformance.errors import RuleError
+from nectar_conformance.rules.exceptions import (
+    ExceptionEntry,
+    exceptions_from_dict,
+)
 from nectar_conformance.rules.model import Changelog, CheckDef
 from nectar_conformance.rules.schema import (
     validate_changelog,
     validate_definition,
+    validate_exceptions,
 )
 
 _NO_CHECKS_DIR = (
@@ -82,3 +87,19 @@ def load_changelog(source_dir: str | None = None) -> Changelog:
         raise RuleError("conformance changelog is not a YAML mapping")
     validate_changelog(data)
     return Changelog.from_dict(data)
+
+
+def load_exceptions(source_dir: str | None = None) -> list[ExceptionEntry]:
+    """Load ``exceptions.yaml`` from the checks dir; the file is optional.
+
+    Unlike the changelog, an absent file is fine and means no exceptions: the feature
+    is opt-in and older checks-dir checkouts simply do not carry the file.
+    """
+    path = _require(source_dir) / "exceptions.yaml"
+    if not path.exists():
+        return []
+    data = yaml.safe_load(path.read_text())
+    if not isinstance(data, dict):
+        raise RuleError("conformance exceptions file is not a YAML mapping")
+    validate_exceptions(data)
+    return exceptions_from_dict(data)

@@ -34,6 +34,14 @@ def _check_to_dict(check: CheckResult) -> dict:
             "days": a.days,
             "tier": a.tier,
         }
+    if check.exception is not None:
+        e = check.exception
+        data["exception"] = {
+            "reason": e.reason,
+            "expiry": e.expiry,
+            "expired": e.expired,
+            "note": e.note,
+        }
     if check.provenance is not None:
         p = check.provenance
         data["provenance"] = {

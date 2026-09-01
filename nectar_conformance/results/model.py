@@ -11,7 +11,10 @@ from dataclasses import dataclass
 import enum
 from typing import Any
 
-REPORT_SCHEMA_VERSION = "2.0"
+REPORT_SCHEMA_VERSION = "2.1"
+# 2.1 adds the ``excepted`` status (a site-scoped exception suppressed a failure) and
+# the optional ``exception`` block on a check result carrying the reason/expiry; an
+# expired exception leaves the status ``fail`` and only attaches the block.
 # 2.0 removes the ``severity`` key from rule results: every check is blocking and the
 # score weights all applicable checks equally.
 # 1.1 added the optional ``advisory`` block to a check result: a check may PASS today
@@ -26,6 +29,7 @@ class Status(str, enum.Enum):
     UNKNOWN = (
         "unknown"  # value could not be determined; never treated as a pass
     )
+    EXCEPTED = "excepted"  # failed, but a site-scoped exception sanctions the deviation
 
 
 # Statuses that count towards the score (i.e. the check actually applied).
@@ -69,6 +73,21 @@ class Advisory:
 
 
 @dataclass(frozen=True)
+class ExceptionNote:
+    """A site-scoped exception that applied (or has expired) for this result.
+
+    Attached when an exception matched the failing node: an active one suppresses the
+    failure (status becomes EXCEPTED), an expired one leaves the failure standing and
+    only annotates it so the lapsed exception stays visible.
+    """
+
+    reason: str
+    expiry: str | None  # ISO date the exception stops applying; None = never
+    expired: bool
+    note: str | None = None
+
+
+@dataclass(frozen=True)
 class CheckResult:
     """The outcome of one check on one node (or one site-level check)."""
 
@@ -85,18 +104,25 @@ class CheckResult:
     advisory: Advisory | None = (
         None  # a pending dated change, when one applies
     )
+    exception: ExceptionNote | None = (
+        None  # the exception that suppressed (or lapsed on) this result
+    )
 
 
 def _rollup(statuses: list[Status]) -> Status:
     """Roll a rule's per-node statuses up to a single rule status.
 
-    Any FAIL makes the rule FAIL. Otherwise any UNKNOWN -> UNKNOWN, any PASS -> PASS,
-    and only-SKIP -> SKIP.
+    Any FAIL makes the rule FAIL (only unwaived failures keep FAIL, so a genuine
+    failure outranks an excepted one). Otherwise any EXCEPTED -> EXCEPTED, so a live
+    waiver stays visible at the rule level instead of rendering as a clean pass.
+    Then any PASS -> PASS, any UNKNOWN -> UNKNOWN, and only-SKIP -> SKIP.
     """
     if not statuses:
         return Status.SKIP
     if Status.FAIL in statuses:
         return Status.FAIL
+    if Status.EXCEPTED in statuses:
+        return Status.EXCEPTED
     if Status.PASS in statuses:
         return Status.PASS
     if Status.UNKNOWN in statuses:

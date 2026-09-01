@@ -1,10 +1,11 @@
 """``changelog lint`` - structurally validate a checks directory.
 
 The checks data lives in its own repository (``nectar-conformance-checks``); this is the
-CI gate that repository runs to catch a malformed changelog or definition before merge.
-It loads the definitions and changelog, runs :func:`changelog_lint`, and reports any
-structural violations (unknown check ids, ``effective`` after ``due``, test due later
-than prod, colliding entries).
+CI gate that repository runs to catch a malformed changelog, definition, or exceptions
+file before merge. It loads the checks dir, runs :func:`changelog_lint` and
+:func:`exceptions_lint`, and reports structural violations (unknown check ids,
+``effective`` after ``due``, test due later than prod, colliding entries). Warnings
+(e.g. an expired exception) are printed but do not fail the lint.
 """
 
 from __future__ import annotations
@@ -23,6 +24,10 @@ class ChangelogLint(Command):
         parser = super().get_parser(prog_name)
         parser.add_argument("--config", help="path to a config file")
         parser.add_argument("--checks-dir", help="checks dir to lint")
+        parser.add_argument(
+            "--as-of",
+            help="judge exception expiry at this date (YYYY-MM-DD, default: today)",
+        )
         return parser
 
     def take_action(self, parsed_args):
@@ -33,10 +38,12 @@ class ChangelogLint(Command):
         )
         cfg = config_mod.load(parsed_args.config, overrides)
         try:
-            violations = lint_versions(cfg)
+            violations, warnings = lint_versions(cfg, as_of=parsed_args.as_of)
         except ConformanceError as exc:
             self.app.stderr.write(f"error: {exc}\n")
             return 3
+        for w in warnings:
+            self.app.stderr.write(f"warning: {w}\n")
         if violations:
             self.app.stderr.write("changelog lint found problems:\n")
             for v in violations:

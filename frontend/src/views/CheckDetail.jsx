@@ -77,6 +77,13 @@ function SiteRow({ site }) {
               {c.status === 'fail' && c.message && (
                 <span className="muted"> — {c.message}</span>
               )}
+              {c.status === 'excepted' && c.exception && (
+                <span className="exception-line">
+                  {' '}
+                  — excepted: {c.exception.reason}
+                  {c.exception.expiry && ` (until ${c.exception.expiry})`}
+                </span>
+              )}
             </div>
           ))
         )}

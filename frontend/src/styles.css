@@ -15,6 +15,8 @@
   --th-bg: #fafbfc;
   --skip-bg: #eef1f5;
   --info-bg: #eaf2ff;
+  --except: #6e40c9;
+  --except-bg: #f1ebfa;
   --fail-row-bg: #fffafa;
   --muted-bucket-bg: #f4f6f8;
   --overdue-border: #f1b0a8;
@@ -40,6 +42,8 @@
   --th-bg: #121212;
   --skip-bg: #1f1f1f;
   --info-bg: #2a2a2a;
+  --except: #a371f7;
+  --except-bg: #2a1d3d;
   --fail-row-bg: #2a1416;
   --muted-bucket-bg: #121212;
   --overdue-border: #6e2b23;
@@ -251,6 +255,12 @@ a {
   color: var(--warn);
 }
 
+/* A failure sanctioned by a site-scoped exception (waiver): visible, not alarming. */
+.status-excepted {
+  background: var(--except-bg);
+  color: var(--except);
+}
+
 .badge-enforced {
   background: var(--bad-bg);
   color: var(--bad);
@@ -312,6 +322,17 @@ a {
   color: var(--warn);
 }
 
+/* Detail line for an excepted host: the waiver's reason and expiry. */
+.exception-line {
+  color: var(--except);
+}
+
+/* A failing host whose exception has lapsed: as loud as a failure. */
+.exception-expired {
+  color: var(--bad);
+  font-weight: 600;
+}
+
 /* A passing check whose pending change falls due within the urgency window. */
 .advisory-urgent {
   color: var(--bad);
@@ -359,6 +380,10 @@ a {
 
 .dot-unknown {
   background: var(--warn);
+}
+
+.dot-excepted {
+  background: var(--except);
 }
 
 .dot-skip {

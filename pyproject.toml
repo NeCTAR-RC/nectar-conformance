@@ -46,6 +46,7 @@ version_squash = "nectar_conformance.cli.commands.version_cmd:VersionSquash"
 version_diff = "nectar_conformance.cli.commands.diff:DiffVersions"
 report_diff = "nectar_conformance.cli.commands.report_diff:ReportDiff"
 changelog_lint = "nectar_conformance.cli.commands.changelog_cmd:ChangelogLint"
+exception_list = "nectar_conformance.cli.commands.exception_cmd:ExceptionList"
 
 # Escape-hatch check plugins register here (kind: plugin in a check definition).
 [project.entry-points."nectar_conformance.checks"]

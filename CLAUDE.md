@@ -106,6 +106,17 @@ The pipeline is `DataSource -> SiteModel -> engine.evaluate(model, rules) -> Rep
   the shape, that the regex compiles, and the op). Rendering must never show the raw dict: use
   `values.describe` (backend) / `fmtValue` (frontend). Older tool releases fail pattern
   values, so ship the tool before authoring one in `nectar-conformance-checks`.
+- **Exceptions are blanket, site/host-scoped waivers in `exceptions.yaml`** (optional, in
+  the checks repo next to `changelog.yaml`): `check_id` + `site` + `hosts` (full certnames,
+  exact match) + required `reason`, optional `effective`/`expiry`/`note`. Active in
+  `[effective, expiry)` at the evaluation instant (`--as-of` governs them like the fold).
+  They are applied as a pure post-transform (`results/exceptions.py:apply_exceptions`,
+  called from `service.py:run_check`, never inside the engine): an active match rewrites a
+  FAIL to the `excepted` status (excluded from score/exit code, but ranked above PASS in
+  `_rollup` so a live waiver stays visible); an expired match leaves the FAIL and only
+  attaches the `exception` annotation, and `changelog lint` warns (exit 0) about it. Old
+  tool releases never read the file, so shipping order does not matter — but an exception
+  only works where a tool with this feature runs.
 - **The check data is not in this repo; tests carry their own mirror**:
   `tests/fixtures/checks/` holds a frozen `changelog.yaml` plus a copy of the real
   `definitions/`, loaded via the `fixture_changelog`/`fixture_definitions`/`fixture_rules`

@@ -1,4 +1,4 @@
-"""Load and apply the JSON Schema for check definitions and the conformance changelog."""
+"""Load and apply the JSON Schema for check definitions, the changelog, and exceptions."""
 
 from __future__ import annotations
 
@@ -42,3 +42,8 @@ def validate_definition(data: dict) -> None:
 def validate_changelog(data: dict) -> None:
     """Validate the conformance changelog; raise RuleError on the first problem."""
     _validate(data, "changelog", "conformance changelog")
+
+
+def validate_exceptions(data: dict) -> None:
+    """Validate the conformance exceptions file; raise RuleError on the first problem."""
+    _validate(data, "exceptions", "conformance exceptions")
