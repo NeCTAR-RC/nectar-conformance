@@ -187,14 +187,20 @@ def _baseline_entries(
     note: str,
     test_state: dict | None,
     prod_state: dict | None,
+    *,
+    collapsible: bool,
 ) -> list[ChangeEntry]:
     """Baseline directive(s) reproducing one check's enforced state, ``due`` stripped.
 
     Each baseline keeps the *winning* enforced entry's ``effective`` date (not the squash
     date), so that a carried-forward pending entry with an earlier ``effective`` still wins
     once its ``due`` passes; using the squash date here would let the baseline outrank it and
-    silently drop the rollout. Tiers collapse to a single ``tier: all`` entry only when test
-    and prod enforce the same value and effective date; otherwise per-tier entries are
+    silently drop the rollout. Tiers collapse to a single ``tier: all`` entry when test and
+    prod enforce the same value: always when they also share the effective date, and when
+    ``collapsible`` even if they reached the value on different dates (a staggered rollout
+    that has fully landed), keeping the later date. The caller sets ``collapsible`` only
+    when no entry for the check is carried forward: the baseline is then the only entry
+    left, so its date cannot outrank a pending rollout. Otherwise per-tier entries are
     emitted. Emits one entry when only one tier is enforced; nothing when neither is (the
     check survives only via carried-forward entries).
     """
@@ -210,12 +216,14 @@ def _baseline_entries(
         )
 
     if test_state is not None and prod_state is not None:
-        same = (test_state["value"], test_state["effective"]) == (
-            prod_state["value"],
-            prod_state["effective"],
-        )
-        if same:
-            return [entry("all", prod_state)]
+        same_value = test_state["value"] == prod_state["value"]
+        same_date = test_state["effective"] == prod_state["effective"]
+        if same_value and (same_date or collapsible):
+            later = max(
+                (test_state, prod_state),
+                key=lambda s: _parse_date(s["effective"]),
+            )
+            return [entry("all", later)]
         return [entry("test", test_state), entry("prod", prod_state)]
     if test_state is not None:
         return [entry("test", test_state)]
@@ -262,6 +270,15 @@ def squash(
             f"changelog references unknown check(s): {', '.join(unknown)}"
         )
 
+    # Carry forward anything not yet fully applied: announced for the future, or still pending.
+    carried = [
+        e
+        for e in changelog.entries
+        if _parse_date(e.effective) > as_of
+        or (e.due is not None and _parse_date(e.due) > as_of)
+    ]
+    carried_ids = {e.check_id for e in carried}
+
     note = f"baseline {name}"
     baselines: list[ChangeEntry] = []
     for check_id in sorted(changelog.check_ids):
@@ -272,16 +289,14 @@ def squash(
             _visible(changelog, check_id, "prod", as_of), as_of
         )
         baselines.extend(
-            _baseline_entries(check_id, note, test_state, prod_state)
+            _baseline_entries(
+                check_id,
+                note,
+                test_state,
+                prod_state,
+                collapsible=check_id not in carried_ids,
+            )
         )
-
-    # Carry forward anything not yet fully applied: announced for the future, or still pending.
-    carried = [
-        e
-        for e in changelog.entries
-        if _parse_date(e.effective) > as_of
-        or (e.due is not None and _parse_date(e.due) > as_of)
-    ]
 
     tags = {n: d for n, d in changelog.tags.items() if _parse_date(d) >= as_of}
     tags[name] = as_of.isoformat()  # the version is pinned to the squash date

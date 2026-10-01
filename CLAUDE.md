@@ -85,8 +85,13 @@ The pipeline is `DataSource -> SiteModel -> engine.evaluate(model, rules) -> Rep
   `check run` stays live (it does not adopt the new tag as a pinned default). Baselines keep the
   **winning enforced entry's real
   `effective` date, not the squash date** — using the squash date would outrank a carried
-  pending entry and silently drop a rollout. The full pre-squash log is copied verbatim to
-  `checks/archive/changelog-<name>.yaml` (history is never lost). Folding the squashed log at
+  pending entry and silently drop a rollout. Test/prod baselines that hold the same value but
+  reached it on different dates collapse to one `all` entry (dated to the later date) only when
+  nothing for that check is carried forward; otherwise they stay per tier so the carried entry
+  can still outrank its baseline. The full pre-squash log is copied verbatim to
+  `archive/changelog-<old tag>.yaml` in the checks dir, named after the newest tag the squash
+  drops (the version only the archive can still reproduce; `pre-<name>` when there is none), so
+  history is never lost. Folding the squashed log at
   any date on/after the squash reproduces the original behaviour; older dates are served by the
   archive, so `version diff` across a squash boundary is a known gap.
 - **`version diff` reports value changes, not just check-id sets**: `service.py:diff_versions`

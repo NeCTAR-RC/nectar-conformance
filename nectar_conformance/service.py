@@ -377,13 +377,35 @@ def _entry_to_mapping(entry: ChangeEntry) -> dict:
     return out
 
 
-def _render_changelog_yaml(changelog: Changelog, name: str, as_of: str) -> str:
-    """Render a squashed changelog as YAML: a generated header, tags, then flow-style entries."""
+def _archive_stem(changelog: Changelog, as_of: date, name: str) -> str:
+    """Name the archive after the version whose history it holds.
+
+    That is the newest tag the squash drops (pinned before ``as_of``): once
+    squashed, the archive is the only place that version can still be
+    reproduced from. A log with no tag to drop falls back to ``pre-<name>``.
+    """
+    dropped = {
+        tag: date.fromisoformat(pinned)
+        for tag, pinned in changelog.tags.items()
+        if date.fromisoformat(pinned) < as_of
+    }
+    if not dropped:
+        return f"pre-{name}"
+    return max(dropped, key=lambda tag: (dropped[tag], tag))
+
+
+def _render_changelog_yaml(
+    changelog: Changelog, name: str, as_of: str, archive: str
+) -> str:
+    """Render a squashed changelog as YAML: a generated header, tags, then flow-style entries.
+
+    ``archive`` is the archived pre-squash log's path relative to the checks dir.
+    """
     lines = [
         "---",
         f"# Conformance changelog, squashed to baseline {name} on {as_of} by",
         "# `nectar-conformance version squash`. Pre-baseline history is preserved verbatim in",
-        f"# checks/archive/changelog-{name}.yaml (and in git). Append new dated directives below;",
+        f"# {archive} (and in git). Append new dated directives below;",
         "# a conformance version is a named tag (a pinned evaluation date) over this log.",
         "",
         "tags:",
@@ -409,10 +431,12 @@ def squash_changelog(
 ) -> SquashResult:
     """Squash the changelog to a fresh baseline named ``name``, archiving the old log.
 
-    Writes ``checks/archive/changelog-<name>.yaml`` (a verbatim copy of the pre-squash log) and
-    a regenerated ``checks/changelog.yaml``. Refuses to run on a changelog that does not already
-    lint clean, and never overwrites an existing archive or live file's history without a fresh
-    tag. Raises a :class:`~nectar_conformance.errors.ConformanceError` subclass on any problem.
+    Writes ``archive/changelog-<old version>.yaml`` under the checks dir (a verbatim copy of
+    the pre-squash log, named after the newest tag the squash drops, i.e. the version only
+    the archive can still reproduce) and a regenerated ``changelog.yaml``. Refuses to run on
+    a changelog that does not already lint clean, and never overwrites an existing archive
+    or live file's history without a fresh tag. Raises a
+    :class:`~nectar_conformance.errors.ConformanceError` subclass on any problem.
     """
     today = datetime.now(timezone.utc).date()
     if as_of:
@@ -452,7 +476,8 @@ def squash_changelog(
 
     checks_dir = writable_checks_dir(config.checks_dir)
     archive_dir = checks_dir / "archive"
-    archive_path = archive_dir / f"changelog-{name}.yaml"
+    archive_name = f"changelog-{_archive_stem(changelog, instant, name)}.yaml"
+    archive_path = archive_dir / archive_name
     changelog_path = checks_dir / "changelog.yaml"
     if archive_path.exists():
         raise RuleError(
@@ -462,7 +487,12 @@ def squash_changelog(
     archive_dir.mkdir(parents=True, exist_ok=True)
     archive_path.write_text(read_changelog_text(config.checks_dir))
     changelog_path.write_text(
-        _render_changelog_yaml(new_changelog, name, instant.isoformat())
+        _render_changelog_yaml(
+            new_changelog,
+            name,
+            instant.isoformat(),
+            archive=f"archive/{archive_name}",
+        )
     )
 
     baselines = sum(

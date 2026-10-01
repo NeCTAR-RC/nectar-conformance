@@ -372,6 +372,93 @@ def test_squash_collapses_agreeing_tiers(definitions):
     assert rules["glance.api.image_tag"].expected == "30.1.0"
 
 
+_LANDED_STAGGERED = [
+    # A staggered rollout that has fully landed: both tiers now enforce 24.09,
+    # reached on different dates.
+    {"check_id": "ovn.version", "value": "24.03", "effective": "2026-01-01"},
+    {
+        "check_id": "ovn.version",
+        "value": "24.09",
+        "effective": "2026-06-10",
+        "due": "2026-08-11",
+        "tier": "test",
+    },
+    {
+        "check_id": "ovn.version",
+        "value": "24.09",
+        "effective": "2026-06-22",
+        "due": "2026-08-11",
+        "tier": "prod",
+    },
+]
+
+
+def test_squash_collapses_agreeing_values_reached_on_different_dates(
+    definitions,
+):
+    # Nothing is carried forward for the check, so one tier: all baseline dated to
+    # the later date reproduces both tiers; two per-tier copies would be noise.
+    squashed = squash(
+        _changelog(_LANDED_STAGGERED),
+        definitions,
+        as_of=date(2026, 9, 30),
+        name="2027.0",
+    )
+    entries = _entries_for(squashed, "ovn.version")
+    assert len(entries) == 1
+    assert (entries[0].tier, entries[0].value, entries[0].effective) == (
+        "all",
+        "24.09",
+        "2026-06-22",
+    )
+    for tier in ("test", "prod"):
+        rule = _by_id(
+            fold(squashed, definitions, tier=tier, as_of=date(2026, 9, 30))
+        )["ovn.version"]
+        assert rule.expected == "24.09" and not rule.has_pending
+
+
+def test_squash_keeps_tier_split_while_a_rollout_is_carried(definitions):
+    # Same landed rollout, but test has a further change pending whose effective
+    # sits between the two tiers' dates. Collapsing to the later date would let the
+    # baseline outrank that carried entry once due and silently drop the rollout,
+    # so the baselines must stay per tier with their own dates.
+    pending = {
+        "check_id": "ovn.version",
+        "value": "25.03",
+        "effective": "2026-06-15",
+        "due": "2026-12-01",
+        "tier": "test",
+    }
+    changelog = _changelog(_LANDED_STAGGERED + [pending])
+    squashed = squash(
+        changelog, definitions, as_of=date(2026, 9, 30), name="2027.0"
+    )
+    baselines = [
+        e for e in _entries_for(squashed, "ovn.version") if e.due is None
+    ]
+    assert {(e.tier, e.effective) for e in baselines} == {
+        ("test", "2026-06-10"),
+        ("prod", "2026-06-22"),
+    }
+    for as_of in (date(2026, 9, 30), date(2026, 12, 1)):
+        for tier in ("test", "prod"):
+            before = _by_id(
+                fold(changelog, definitions, tier=tier, as_of=as_of)
+            )["ovn.version"]
+            after = _by_id(
+                fold(squashed, definitions, tier=tier, as_of=as_of)
+            )["ovn.version"]
+            assert (after.expected, after.pending_value) == (
+                before.expected,
+                before.pending_value,
+            )
+    landed = _by_id(
+        fold(squashed, definitions, tier="test", as_of=date(2026, 12, 1))
+    )["ovn.version"]
+    assert landed.expected == "25.03"
+
+
 def test_squash_manages_tags_and_lints_clean(definitions):
     changelog = _changelog(
         [
