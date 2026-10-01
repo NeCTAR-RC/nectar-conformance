@@ -1,0 +1,8 @@
+---
+upgrade:
+  - |
+    The web dashboard's Versions page has been removed. It listed the
+    requirements folded at a tag's pinned date with their expected and pending
+    values, all of which the new Supported page shows per node type, with each
+    accepted value tagged current, ending or new. The ``/api/versions``
+    endpoints are unchanged.

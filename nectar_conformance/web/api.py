@@ -1,7 +1,8 @@
 """The read-only JSON API.
 
-Site/conformance/rollout endpoints read the stored reports; version/changes endpoints are
-computed live from the packaged check data (cheap, no PuppetDB). All routes are read-only.
+Site/conformance/rollout endpoints read the stored reports; version/changes/supported
+endpoints are computed live from the check data (cheap, no PuppetDB). All routes are
+read-only.
 """
 
 from __future__ import annotations
@@ -31,6 +32,7 @@ from nectar_conformance.service import (
     pending_changes,
     resolve_rules,
 )
+from nectar_conformance.supported import supported_options
 from nectar_conformance.web.serialise import rule_to_dict, site_summary
 from nectar_conformance.web.settings import WebSettings
 from nectar_conformance.web.store import ReportStore
@@ -219,6 +221,20 @@ def build_router(settings: WebSettings, store: ReportStore) -> APIRouter:
         return {
             "version": tag,
             "requirements": [rule_to_dict(r) for r in rules],
+        }
+
+    @router.get("/supported")
+    def supported() -> dict:
+        # What each node type may run today for this tier: every value the
+        # engine accepts, tagged current / ending / upcoming. Computed live from
+        # the check data (no reports), so it is right even for a site not yet
+        # evaluated. Grouping by spec_section (the node type) is the UI's job.
+        today = date.today()
+        rules = resolve_rules(config, tier=tier, as_of=today)
+        return {
+            "tier": tier,
+            "as_of": today.isoformat(),
+            "checks": supported_options(rules),
         }
 
     @router.get("/changes")

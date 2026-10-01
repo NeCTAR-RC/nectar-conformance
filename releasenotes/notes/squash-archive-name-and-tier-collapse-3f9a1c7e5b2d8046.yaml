@@ -1,0 +1,19 @@
+---
+fixes:
+  - |
+    ``version squash`` now names the archived pre-squash log after the
+    version it holds: the newest tag the squash drops (for example
+    ``archive/changelog-2026.1.yaml`` when squashing to 2027.1), instead of
+    after the new baseline. A log with no tag to drop is archived as
+    ``changelog-pre-<name>.yaml``. The header written into the squashed
+    ``changelog.yaml`` now points at that file by its real path relative to
+    the checks directory, rather than a ``checks/archive/`` path that does
+    not exist in a ``nectar-conformance-checks`` checkout.
+  - |
+    ``version squash`` collapses the test and prod baselines of a check into
+    one ``tier: all`` entry when both tiers enforce the same value but
+    reached it on different dates (a staggered rollout that has fully
+    landed), provided nothing for that check is carried forward. The
+    collapsed entry keeps the later of the two dates. A check with a rollout
+    still in flight keeps per-tier baselines, as before, so the carried entry
+    can still outrank its baseline once due.

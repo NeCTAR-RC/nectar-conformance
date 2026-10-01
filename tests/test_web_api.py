@@ -258,6 +258,58 @@ def test_sites_error_only_row_has_null_rollout(tmp_path):
     assert sites["ardctest"]["rollout"] == _ZERO_ROLLOUT
 
 
+def test_supported_with_baseline_changelog(client):
+    # The frozen fixture changelog has no dated entries: every accepted value is
+    # current, and value-free (present/absent) checks have nothing to list.
+    body = client.get("/api/supported").json()
+    assert body["tier"] == "prod"
+    assert body["as_of"] == date.today().isoformat()
+    checks = {c["id"]: c for c in body["checks"]}
+    assert "networking.uses_networkd" not in checks
+    assert "neutron.linuxbridge_absent" not in checks
+    controller = checks["os.controller.ubuntu"]
+    assert controller["op"] == "in_set"
+    assert controller["spec_section"]
+    assert controller["pending_due"] is None
+    assert controller["options"] == [
+        {"value": "24.04", "status": "current", "due": None},
+        {"value": "22.04", "status": "current", "due": None},
+    ]
+    assert all(
+        o["status"] == "current" for c in body["checks"] for o in c["options"]
+    )
+
+
+def test_supported_with_dated_change(tmp_path):
+    # No reports are needed: the view is computed live from the check data.
+    checks_dir = _checks_with_dated_change(tmp_path / "checks")
+    reports = tmp_path / "reports"
+    reports.mkdir()
+    client = _serve(reports, checks_dir=checks_dir)
+    today = date.today()
+    due = (today + timedelta(days=10)).isoformat()
+    mq_due = (today + timedelta(days=20)).isoformat()
+
+    checks = {
+        c["id"]: c for c in client.get("/api/supported").json()["checks"]
+    }
+    # Database nodes: both current releases end on the due date, 26.04 is new.
+    db = checks["os.database.ubuntu"]
+    assert db["pending_due"] == due
+    assert db["options"] == [
+        {"value": "24.04", "status": "ending", "due": due},
+        {"value": "22.04", "status": "ending", "due": due},
+        {"value": "26.04", "status": "new", "due": due},
+    ]
+    # Message queue nodes: the set narrows, so only 22.04 is ending.
+    mq = checks["os.mq.ubuntu"]
+    assert mq["pending_due"] == mq_due
+    assert mq["options"] == [
+        {"value": "24.04", "status": "current", "due": None},
+        {"value": "22.04", "status": "ending", "due": mq_due},
+    ]
+
+
 def test_changes_pending_and_rollout_shape(client):
     body = client.get("/api/changes").json()
     changes = body["changes"]

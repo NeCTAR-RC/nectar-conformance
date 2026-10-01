@@ -1,0 +1,13 @@
+---
+features:
+  - |
+    The web dashboard gains a Supported page answering "what may each node
+    type run today?". It groups every value-bearing check by node type (the
+    check's spec section) and lists each accepted value as a chip. Every
+    value shown is accepted now: one dropped by a pending change is marked
+    ending, with the date it stops being accepted (red once that is within
+    30 days), and one added by a pending change is marked new. Backed by a
+    new read-only
+    ``/api/supported`` endpoint, computed live from the check data for the
+    deployment's tier at today's date; presence/absence checks have no value
+    to list and are omitted.

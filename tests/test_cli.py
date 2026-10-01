@@ -189,10 +189,15 @@ def test_version_squash_writes_baseline_and_archive(tmp_path):
     )
     assert code == 0
 
-    # The archive is a verbatim copy of the pre-squash changelog (history preserved).
-    archive = Path(checks) / "archive" / "changelog-2027.0.yaml"
+    # The archive is a verbatim copy of the pre-squash changelog (history preserved),
+    # named after the version it holds (the dropped 2026.1 tag), not the new baseline,
+    # and the squashed log's header points at it by its path within the checks dir.
+    archive = Path(checks) / "archive" / "changelog-2026.1.yaml"
     assert archive.exists()
     assert archive.read_text() == original
+    header = (Path(checks) / "changelog.yaml").read_text()
+    assert "archive/changelog-2026.1.yaml" in header
+    assert "checks/archive" not in header
 
     # The rewritten live log loads, lints clean, gains the new tag, and drops the
     # superseded ovn 24.03 entry (only the enforced 24.09 baseline remains).

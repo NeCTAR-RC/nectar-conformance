@@ -22,6 +22,8 @@
   --overdue-border: #f1b0a8;
   --tier-prod: #6e40c9;
   --tier-test: #1f6feb;
+  --new: #1f6feb;
+  --new-bg: #eaf2ff;
   color-scheme: light;
 }
 
@@ -49,6 +51,8 @@
   --overdue-border: #6e2b23;
   --tier-prod: #6e40c9;
   --tier-test: #1f6feb;
+  --new: #58a6ff;
+  --new-bg: #0d2240;
   color-scheme: dark;
 }
 
@@ -512,4 +516,85 @@ a {
 
 .bucket-muted-bucket {
   background: var(--muted-bucket-bg);
+}
+
+/* Supported page: one chip per accepted value, coloured by how long it stays
+   accepted. Current is deliberately neutral so ending/new stand out. */
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.opt {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--skip-bg);
+  color: var(--ink);
+  /* A long pattern (a multi-alternative regex) wraps inside the chip rather
+     than pushing the table wider than the page. */
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.opt-ending {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.opt-ending.opt-urgent {
+  background: var(--bad-bg);
+  color: var(--bad);
+}
+
+.opt-new {
+  background: var(--new-bg);
+  color: var(--new);
+}
+
+.opt-when {
+  font-weight: 400;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-bottom: 14px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Jump list of node types above the per-type tables. */
+.jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.jump a {
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.jump a:hover {
+  border-color: var(--accent);
 }
