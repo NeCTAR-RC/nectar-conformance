@@ -23,7 +23,7 @@ export default function Supported() {
       <p className="muted">
         What each node type may run today. Every value listed is accepted now;
         the colour says for how long. Checks with no bound value (presence
-        checks) are not listed here: see Versions for the full requirement set.
+        checks) have nothing to list here; they appear on each site's page.
       </p>
       <Legend />
       <Async state={state} empty={(d) => d.checks.length === 0}>
