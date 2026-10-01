@@ -3,6 +3,7 @@ import {
   daysUntil,
   fmtAge,
   fmtDueIn,
+  fmtOption,
   fmtStatusCounts,
   fmtValue,
   groupBySection,
@@ -22,6 +23,28 @@ describe('fmtValue', () => {
   it('renders pattern values as a match, not an object', () => {
     expect(fmtValue({ regex: '29\\.4\\..*' })).toBe('matching /29\\.4\\..*/')
     expect(fmtValue({ other: 1 })).toBe('{"other":1}')
+  })
+})
+
+describe('fmtOption', () => {
+  it('shows the bare value for membership and equality checks', () => {
+    expect(fmtOption('24.04', 'in_set')).toBe('24.04')
+    expect(fmtOption('3.13.7-1', 'equals')).toBe('3.13.7-1')
+    expect(fmtOption({ regex: '29\\.4\\..*' }, 'equals')).toBe(
+      'matching /29\\.4\\..*/',
+    )
+  })
+  it('qualifies counts, version floors and negations', () => {
+    expect(fmtOption(3, 'count_gte')).toBe('at least 3')
+    expect(fmtOption(1, 'count_lte')).toBe('at most 1')
+    expect(fmtOption(2, 'count_eq')).toBe('exactly 2')
+    expect(fmtOption('10.11', 'semver_gte')).toBe('10.11 or newer')
+    expect(fmtOption('20.04', 'not_equals')).toBe('not 20.04')
+    expect(fmtOption('^29', 'regex')).toBe('matching /^29/')
+  })
+  it('falls back to the bare value for an unknown operator', () => {
+    expect(fmtOption('x', undefined)).toBe('x')
+    expect(fmtOption(null, 'in_set')).toBe('—')
   })
 })
 

@@ -13,6 +13,25 @@ export function fmtValue(value) {
   return String(value)
 }
 
+// How an accepted value reads under each assertion operator. Set membership and
+// equality (the common case) show the value itself; the rest need a qualifier so
+// a chip on the Supported page says "at least 3" for a host count or "10.11 or
+// newer" for a version floor rather than a bare number.
+const OPTION_PHRASES = {
+  count_gte: (v) => `at least ${v}`,
+  count_lte: (v) => `at most ${v}`,
+  count_eq: (v) => `exactly ${v}`,
+  semver_gte: (v) => `${v} or newer`,
+  not_equals: (v) => `not ${v}`,
+  regex: (v) => `matching /${v}/`,
+}
+
+export function fmtOption(value, op) {
+  const text = fmtValue(value)
+  const phrase = OPTION_PHRASES[op]
+  return phrase ? phrase(text) : text
+}
+
 // A human relative age from a number of seconds (or null -> "never").
 export function fmtAge(seconds) {
   if (seconds == null) return 'never'

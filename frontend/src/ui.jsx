@@ -6,6 +6,7 @@ export {
   daysUntil,
   fmtAge,
   fmtDueIn,
+  fmtOption,
   fmtStatusCounts,
   fmtValue,
   groupBySection,

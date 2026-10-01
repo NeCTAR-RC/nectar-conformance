@@ -8,6 +8,7 @@ import CheckDetail from './views/CheckDetail.jsx'
 import Versions from './views/Versions.jsx'
 import Changes from './views/Changes.jsx'
 import Rollout from './views/Rollout.jsx'
+import Supported from './views/Supported.jsx'
 
 export default function App() {
   const health = useApi('/health')
@@ -29,6 +30,7 @@ export default function App() {
           <NavLink to="/" end>
             Sites
           </NavLink>
+          <NavLink to="/supported">Supported</NavLink>
           <NavLink to="/versions">Versions</NavLink>
           <NavLink to="/changes">Changes</NavLink>
           <NavLink to="/rollout">Rollout</NavLink>
@@ -64,6 +66,7 @@ export default function App() {
           <Route path="/" element={<Sites />} />
           <Route path="/sites/:site" element={<SiteDetail />} />
           <Route path="/checks/:checkId" element={<CheckDetail />} />
+          <Route path="/supported" element={<Supported />} />
           <Route path="/versions" element={<Versions />} />
           <Route path="/changes" element={<Changes />} />
           <Route path="/rollout" element={<Rollout />} />
